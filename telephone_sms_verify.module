@@ -1,0 +1,168 @@
+<?php
+/**
+ * @file
+ * Add SMS verification to telephone number field.
+ */
+
+/**
+ * Implements hook_field_widget_info().
+ */
+function telephone_sms_verify_field_widget_info() {
+  return array(
+    'telephone_sms_verify' => array(
+      'label' => t('Telephone number with SMS verification'),
+      'settings' => array(
+        'placeholder' => '',
+        'sms_template' => '',
+      ),
+      'behaviors' => array(
+        'multiple values' => FIELD_BEHAVIOR_DEFAULT,
+        'default value' => FIELD_BEHAVIOR_NONE,
+      ),
+      'field types' => array('telephone'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_widget_form().
+ */
+function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  $widget = $instance['widget'];
+  $settings = $widget['settings'];
+
+  $element += array(
+    '#type' => module_exists('elements') ? 'telfield' : 'textfield',
+    '#prefix' => '<div id="phone-number-' . $delta . '">',
+    '#suffix' => '</div>',
+    '#placeholder' => $settings['placeholder'],
+    '#default_value' => isset($items[$delta]['value']) ? $items[$delta]['value'] : '',
+  );
+
+  $return['value'] = $element;
+
+  // Do not show smscode verification elements on field settings page
+  if (!empty($element['#entity'])) {
+    $return['smscode'] = array(
+      '#type' => 'textfield',
+      '#size' => 6,
+      '#title' => t('SMS Code:'),
+      '#required' => TRUE,
+      '#element_validate' => array('telephone_sms_verify_smscode_validate'),
+    );
+    $return['send_smscode'] = array(
+      '#type' => 'button',
+      '#ajax' => array(
+        'wrapper' => 'phone-number-' . $delta,
+        'callback' => 'telephone_sms_verify_ajax_callback',
+      ),
+      '#value' => t('Send SMS Code'),
+      '#prefix' => '<div id="send-smscode"><div id="send-smscode-btn">',
+      '#suffix' => '</div><div id="send-smscode-count-down"></div></div>',
+      '#attached' => array(
+        'js' => array(
+          drupal_get_path('module', 'telephone_sms_verify') . '/telephone_sms_verify.js',
+        ),
+      ),
+      '#limit_validation_errors' => array(
+        // Validate only the phone number field on AJAX call
+        array('field_phone_number', LANGUAGE_NONE, $delta, 'value'),
+      ),
+      '#submit' => array(),
+    );
+  }
+
+  return $return;
+}
+
+/**
+ * Implements hook_field_widget_error().
+ */
+function telephone_sms_verify_field_widget_error($element, $error, $form, &$form_state) {
+  form_error($element, $error ['message']);
+}
+
+/**
+ * Implements hook_field_widget_settings_form().
+ */
+function telephone_sms_verify_field_widget_settings_form($field, $instance) {
+  $widget = $instance['widget'];
+  $settings = $widget['settings'];
+
+  $element['placeholder'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Placeholder'),
+    '#access' => module_exists('elements') || module_exists('placeholder'),
+    '#description' => t('The placeholder is a short hint (a word or short phrase) intended to aid the user with data entry. A hint could be a sample value or a brief description of the expected format.'),
+    '#default_value' => $settings['placeholder'],
+  );
+
+  $element['sms_template'] = array(
+    '#type' => 'textarea',
+    '#title' => t('SMS Template'),
+    '#description' => t('The SMS template to send to the user. You can use tokens listed below.'),
+    '#default_value' => t('Your SMS verification code is [sms:verify_code].'),
+  );
+
+  // Show available tokens
+  $element['sms_template_tokens'] = array(
+    '#type' => 'markup',
+    '#theme' => 'token_tree',
+    '#token_types' => array('sms'),
+  );
+
+  return $element;
+}
+
+function telephone_sms_verify_ajax_callback($form, $form_state) {
+  $delta = $form_state['triggering_element']['#parents'][2];
+
+  $commands = array();
+
+  if (!isset($form_state['values']['field_phone_number'][LANGUAGE_NONE][$delta]['value'])
+    || empty($form_state['values']['field_phone_number'][LANGUAGE_NONE][$delta]['value'])
+    || form_get_error($form['field_phone_number'][LANGUAGE_NONE][0]['value']) // if there are errors on phone number element
+  ) {
+    // Clear all messages errors
+    $commands[] = ajax_command_remove('#messages');
+    // Show error messages before the AJAX wrapper element
+    $commands[] = ajax_command_before(NULL, theme('status_messages'));
+    // Update the AJAX wrapper element
+    $commands[] = ajax_command_replace(NULL, drupal_render($form['field_phone_number'][LANGUAGE_NONE][$delta]['value']));
+    return array('#type' => 'ajax', '#commands' => $commands);
+  }
+
+  // Generate SMS verification code
+  $_SESSION['smscode'] = sprintf('%06d', rand(0, 999999));
+
+  // Get SMS verification template from field widget settings
+  $template = $form_state['field']['field_phone_number'][LANGUAGE_NONE]['instance']['widget']['settings']['sms_template'];
+
+  // Set default value is no template is configured
+  if (empty($template)) {
+    $template = t('Your SMS verification code is [sms:verify_code].');
+  }
+
+  // Send SMS verification code using SMS Framework
+  sms_send($form_state['values']['field_phone_number'][LANGUAGE_NONE][$delta]['value'], $template);
+
+  // Clear all messages errors
+  $commands[] = ajax_command_remove('#messages');
+  // Update the AJAX wrapper element
+  $commands[] = ajax_command_replace(NULL, drupal_render($form['field_phone_number'][LANGUAGE_NONE][$delta]['value']));
+  // Trigger javascript messages send countdown
+  $commands[] = ajax_command_invoke(NULL, 'DrupalTelephoneSMSVerifyCountDwon');
+
+  return array('#type' => 'ajax', '#commands' => $commands);
+}
+
+function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
+  // TODO only validates this field if the telephone number is newly added or changed
+  if (empty($element['#value'])) {
+    form_error($element, t('This field is required.'));
+  }
+
+  if (!isset($_SESSION['smscode']) || $element['#value'] != $_SESSION['smscode']) {
+    form_error($element, t('smscode is not right'));
+  }
+}
