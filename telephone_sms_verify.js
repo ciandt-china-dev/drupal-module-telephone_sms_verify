@@ -22,7 +22,7 @@
     var send_smscode_count_down = $('#send-smscode-count-down');
     send_smscode_btn.hide();
     send_smscode_count_down.show();
-    sms_count_down(30, send_smscode_count_down, function() {
+    sms_count_down(Drupal.settings.smscode_count_down, send_smscode_count_down, function() {
       send_smscode_btn.show();
       send_smscode_count_down.hide();
     });
