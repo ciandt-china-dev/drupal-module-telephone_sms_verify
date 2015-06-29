@@ -46,7 +46,8 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
     $return['smscode'] = array(
       '#type' => 'textfield',
       '#size' => 6,
-      '#title' => t('SMS Code:'),
+      '#title' => t('SMS Code'),
+      '#prefix' => '<div class="sms-verification-code">',
       '#element_validate' => array('telephone_sms_verify_smscode_validate'),
     );
     $return['send_smscode'] = array(
@@ -57,7 +58,7 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
       ),
       '#value' => t('Send SMS Code'),
       '#prefix' => '<div id="send-smscode"><div id="send-smscode-btn">',
-      '#suffix' => '</div><div id="send-smscode-count-down"></div></div>',
+      '#suffix' => '</div><div id="send-smscode-count-down"></div></div></div>',
       '#attached' => array(
         'js' => array(
           drupal_get_path('module', 'telephone_sms_verify') . '/telephone_sms_verify.js',
