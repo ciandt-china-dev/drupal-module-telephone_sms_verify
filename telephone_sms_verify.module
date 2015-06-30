@@ -13,7 +13,8 @@ function telephone_sms_verify_field_widget_info() {
       'label' => t('Telephone number with SMS verification'),
       'settings' => array(
         'placeholder' => '',
-        'sms_template' => '',
+        'sms_template' => t('Your SMS verification code is [sms:verify_code].'),
+        'sms_code_count_down' => 30,
       ),
       'behaviors' => array(
         'multiple values' => FIELD_BEHAVIOR_DEFAULT,
@@ -111,7 +112,7 @@ function telephone_sms_verify_field_widget_settings_form($field, $instance) {
     '#type' => 'textarea',
     '#title' => t('SMS Template'),
     '#description' => t('The SMS template to send to the user. You can use tokens listed below.'),
-    '#default_value' => t('Your SMS verification code is [sms:verify_code].'),
+    '#default_value' => $settings['sms_template'],
   );
 
   // Show available tokens
@@ -127,7 +128,8 @@ function telephone_sms_verify_field_widget_settings_form($field, $instance) {
     '#title' => t('SMS Code Count Down'),
     '#maxlength' => 6,
     '#description' => t('The count down time (in seconds) until a new sms code can be sent.'),
-    '#default_value' => 30,
+    '#default_value' => $settings['sms_code_count_down'],
+    '#element_validate' => array('element_validate_integer_positive'),
   );
 
   return $element;
