@@ -19,6 +19,11 @@ function telephone_sms_verify_token_info() {
     'description' => t('The verify code of the phone number'),
   );
 
+  $info['tokens']['phone_sms_verify']['expire_time'] = array(
+    'name' => t('Expire Time'),
+    'description' => t('The expire time (in seconds) of verify code'),
+  );
+
   return $info;
 }
 
@@ -32,6 +37,9 @@ function telephone_sms_verify_tokens($type, $tokens, array $data = array(), arra
       switch ($name) {
         case 'verify_code':
           $replacements[$original] = $data['phone_sms_verify']['verify_code'];
+          break;
+        case 'expire_time':
+          $replacements[$original] = $data['phone_sms_verify']['expire_time'];
           break;
       }
     }
