@@ -42,7 +42,7 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
 
   $return['value'] = $element;
 
-  // Do not show smscode verification elements on field settings page
+  // Do not show sms code verification elements on field settings page
   if (!empty($element['#entity'])) {
     $smscode_count_down = isset($instance['widget']['settings']['sms_code_count_down']) ? $instance['widget']['settings']['sms_code_count_down'] : 30;
     $return['smscode'] = array(
@@ -198,7 +198,7 @@ function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
     }
 
     if (!isset($_SESSION['smscode']) || $element['#value'] != $_SESSION['smscode']) {
-      form_error($element, t('smscode is not right'));
+      form_error($element, t('Your SMS verification code is not right'));
     }
   }
 }
