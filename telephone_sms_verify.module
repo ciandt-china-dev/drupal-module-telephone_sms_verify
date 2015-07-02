@@ -150,7 +150,7 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
 
   if (!isset($form_state['values'][$field][LANGUAGE_NONE][$delta]['value'])
     || empty($form_state['values'][$field][LANGUAGE_NONE][$delta]['value'])
-    || form_get_error($form[$field][LANGUAGE_NONE][0]['value']) // if there are errors on phone number element
+    || form_get_error($form[$field][LANGUAGE_NONE][$delta]['value']) // if there are errors on phone number element
   ) {
     // Clear all messages errors
     $commands[] = ajax_command_remove('#messages');
