@@ -5,25 +5,33 @@
  */
 
 /**
- * Implements hook_token_info_alter()
+ * Implements hook_token_info().
  */
-function telephone_sms_verify_token_info_alter(&$data) {
-  $data['tokens']['sms']['verify_code'] = array(
-    'name' => t('Verify code'),
-    'description' => t('The verify code in SMS'),
+function telephone_sms_verify_token_info() {
+  $info['types']['phone_sms_verify'] = array(
+    'name' => t('Telephone SMS Verification'),
+    'needs-data' => 'phone_sms_verify',
+    'description' => t('Tokens provided by Telephone SMS Verification'),
   );
+
+  $info['tokens']['phone_sms_verify']['verify_code'] = array(
+    'name' => t('Verify Code'),
+    'description' => t('The verify code of the phone number'),
+  );
+
+  return $info;
 }
 
 /**
- * Implements hook_tokens()
+ * Implements hook_tokens().
  */
 function telephone_sms_verify_tokens($type, $tokens, array $data = array(), array $options = array()) {
   $replacements = array();
-  if ($type == 'sms' && isset($_SESSION['smscode'])) {
+  if ($type == 'phone_sms_verify') {
     foreach ($tokens as $name => $original) {
       switch ($name) {
         case 'verify_code':
-          $replacements[$original] = $_SESSION['smscode'];
+          $replacements[$original] = $data['phone_sms_verify']['verify_code'];
           break;
       }
     }

@@ -4,7 +4,7 @@
  * Add SMS verification to telephone number field.
  */
 
-define('DEFAULT_VERIFICATION_MESSAGE_TEMPLATE', 'Your SMS verification code is [sms:verify_code].');
+define('DEFAULT_VERIFICATION_MESSAGE_TEMPLATE', 'Your SMS verification code is [phone_sms_verify:verify_code].');
 
 /**
  * Implements hook_field_widget_info().
@@ -112,15 +112,15 @@ function telephone_sms_verify_field_widget_settings_form($field, $instance) {
   $element['sms_template'] = array(
     '#type' => 'textarea',
     '#title' => t('SMS Template'),
-    '#description' => t('The SMS template to send to the user. You can use tokens listed below.'),
+    '#description' => t('The SMS template to send to the user.') . '<br />' . t('This field supports tokens.'),
     '#default_value' => $settings['sms_template'],
   );
 
   // Show available tokens
   $element['sms_template_tokens'] = array(
-    '#type' => 'markup',
     '#theme' => 'token_tree',
-    '#token_types' => array('sms'),
+    '#dialog' => TRUE,
+    '#token_types' => array('phone_sms_verify'),
   );
 
   $element['sms_code_count_down'] = array(
@@ -171,6 +171,8 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   if (empty($template)) {
     $template = t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE);
   }
+
+  $template = token_replace($template, array('phone_sms_verify' => array('verify_code' => $_SESSION['smscode'])));
 
   // Send SMS verification code using SMS Framework
   sms_send($phone_number, $template);
