@@ -4,6 +4,8 @@
  * Add SMS verification to telephone number field.
  */
 
+define('DEFAULT_VERIFICATION_MESSAGE_TEMPLATE', 'Your SMS verification code is [sms:verify_code].');
+
 /**
  * Implements hook_field_widget_info().
  */
@@ -13,7 +15,7 @@ function telephone_sms_verify_field_widget_info() {
       'label' => t('Telephone number with SMS verification'),
       'settings' => array(
         'placeholder' => '',
-        'sms_template' => t('Your SMS verification code is [sms:verify_code].'),
+        'sms_template' => t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE),
         'sms_code_count_down' => 30,
       ),
       'behaviors' => array(
@@ -169,7 +171,7 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
 
   // Set default value is no template is configured
   if (empty($template)) {
-    $template = t('Your SMS verification code is [sms:verify_code].');
+    $template = t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE);
   }
 
   // Send SMS verification code using SMS Framework
