@@ -161,8 +161,14 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
     return array('#type' => 'ajax', '#commands' => $commands);
   }
 
+  //Compute session key
+  $form_id = $form_state['values']['form_id'];
+  $session_key = md5($form_id . $phone_number);
+
   // Generate SMS verification code
-  $_SESSION['smscode'] = sprintf('%06d', rand(0, 999999));
+  if (!isset($_SESSION[$session_key])) {
+    $_SESSION[$session_key]['code'] = sprintf('%06d', rand(0, 999999));
+  }
 
   // Get SMS verification template from field widget settings
   $template = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings']['sms_template'];
@@ -172,7 +178,7 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
     $template = t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE);
   }
 
-  $template = token_replace($template, array('phone_sms_verify' => array('verify_code' => $_SESSION['smscode'])));
+  $template = token_replace($template, array('phone_sms_verify' => array('verify_code' => $_SESSION[$session_key]['smscode'])));
 
   // Send SMS verification code using SMS Framework
   sms_send($phone_number, $template);
@@ -200,7 +206,11 @@ function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
       form_error($element, t('This field is required.'));
     }
 
-    if (!isset($_SESSION['smscode']) || $element['#value'] != $_SESSION['smscode']) {
+    //Compute session key
+    $form_id = $form_state['values']['form_id'];
+    $session_key = md5($form_id . $phone_number);
+
+    if (!isset($_SESSION[$session_key]) || $element['#value'] != $_SESSION[$session_key]['code']) {
       form_error($element, t('Your SMS verification code is not right'));
     }
   }
