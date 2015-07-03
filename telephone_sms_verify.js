@@ -17,7 +17,7 @@
     }
   }
 
-  $.fn.DrupalTelephoneSMSVerifyCountDwon = function() {
+  $.fn.DrupalTelephoneSMSVerifyCountDown = function() {
     var send_smscode_btn = $('#send-smscode-btn');
     var send_smscode_count_down = $('#send-smscode-count-down');
     send_smscode_btn.hide();

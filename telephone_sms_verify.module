@@ -180,7 +180,7 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   // Update the AJAX wrapper element
   $commands[] = ajax_command_replace(NULL, drupal_render($form[$field][LANGUAGE_NONE][$delta]['value']));
   // Trigger javascript messages send countdown
-  $commands[] = ajax_command_invoke(NULL, 'DrupalTelephoneSMSVerifyCountDwon');
+  $commands[] = ajax_command_invoke(NULL, 'DrupalTelephoneSMSVerifyCountDown');
 
   return array('#type' => 'ajax', '#commands' => $commands);
 }
