@@ -140,18 +140,17 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   $field = $form_state['triggering_element']['#array_parents'][0];
   $delta = $form_state['triggering_element']['#array_parents'][2];
 
+  $phone_number = _telephone_sms_verify_format_default_value($form_state['values'][$field][LANGUAGE_NONE][$delta]['value']);
+  $phone_number_default = _telephone_sms_verify_format_default_value($form[$field][LANGUAGE_NONE][$delta]['value']['#default_value']);
+
   // Do not send sms verification code on account editing page and the phone number is not changed
-  if ($form['#user_category'] == 'account' &&
-    $form_state['values'][$field][LANGUAGE_NONE][$delta]['value'] == $form[$field][LANGUAGE_NONE][$delta]['value']['#default_value']
-  ) {
+  if ($form['#user_category'] == 'account' && $phone_number == $phone_number_default) {
     return $form[$field][LANGUAGE_NONE][$delta]['value'];
   }
 
   $commands = array();
 
-  if (!isset($form_state['values'][$field][LANGUAGE_NONE][$delta]['value'])
-    || empty($form_state['values'][$field][LANGUAGE_NONE][$delta]['value'])
-    || form_get_error($form[$field][LANGUAGE_NONE][$delta]['value']) // if there are errors on phone number element
+  if (empty($phone_number) || form_get_error($form[$field][LANGUAGE_NONE][$delta]['value']) // if there are errors on phone number element
   ) {
     // Clear all messages errors
     $commands[] = ajax_command_remove('#messages');
@@ -174,7 +173,7 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   }
 
   // Send SMS verification code using SMS Framework
-  sms_send($form_state['values'][$field][LANGUAGE_NONE][$delta]['value'], $template);
+  sms_send($phone_number, $template);
 
   // Clear all messages errors
   $commands[] = ajax_command_remove('#messages');
@@ -190,10 +189,11 @@ function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
   $field = $element['#array_parents'][0];
   $delta = $element['#array_parents'][2];
 
+  $phone_number = _telephone_sms_verify_format_default_value($form_state['values'][$field][LANGUAGE_NONE][$delta]['value']);
+  $phone_number_default = _telephone_sms_verify_format_default_value($form[$field][LANGUAGE_NONE][$delta]['value']['#default_value']);
+
   // Only validates this field if the telephone number is newly added or changed
-  if ($form['#user_category'] != 'account' ||
-    $form_state['values'][$field][LANGUAGE_NONE][$delta]['value'] != $form[$field][LANGUAGE_NONE][$delta]['value']['#default_value']
-  ) {
+  if ($form['#user_category'] != 'account' || $phone_number != $phone_number_default) {
     if (empty($element['#value'])) {
       form_error($element, t('This field is required.'));
     }
@@ -202,4 +202,8 @@ function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
       form_error($element, t('Your SMS verification code is not right'));
     }
   }
+}
+
+function _telephone_sms_verify_format_default_value($current, $default = '') {
+  return isset($current) ? $current : $default;
 }
