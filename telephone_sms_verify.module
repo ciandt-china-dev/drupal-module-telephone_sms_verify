@@ -46,7 +46,6 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
 
   // Do not show sms code verification elements on field settings page
   if (!empty($element['#entity'])) {
-    $smscode_count_down = isset($instance['widget']['settings']['sms_code_count_down']) ? $instance['widget']['settings']['sms_code_count_down'] : 30;
     $return['smscode'] = array(
       '#type' => 'textfield',
       '#size' => 6,
@@ -67,7 +66,7 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
         'js' => array(
           drupal_get_path('module', 'telephone_sms_verify') . '/telephone_sms_verify.js',
           array(
-            'data' => array('smscode_count_down' => $smscode_count_down),
+            'data' => array('smscode_count_down' => $settings['sms_code_count_down']),
             'type' => 'setting'
           ),
         ),
