@@ -17,6 +17,7 @@ function telephone_sms_verify_field_widget_info() {
         'placeholder' => '',
         'sms_template' => t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE),
         'sms_code_expire' => 30,
+        'sms_code_length' => 6,
         'sms_code_count_down' => 30,
         'sms_code_max_request' => 3,
       ),
@@ -126,6 +127,16 @@ function telephone_sms_verify_field_widget_settings_form($field, $instance) {
     '#token_types' => array('phone_sms_verify'),
   );
 
+  $element['sms_code_length'] = array(
+    '#type' => 'textfield',
+    '#size' => 6,
+    '#title' => t('SMS Code Length'),
+    '#maxlength' => 6,
+    '#description' => t('The length of the SMS verification code'),
+    '#default_value' => $settings['sms_code_length'],
+    '#element_validate' => array('element_validate_integer_positive'),
+  );
+
   $element['sms_code_expire'] = array(
     '#type' => 'textfield',
     '#size' => 6,
@@ -189,11 +200,12 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   $session_key = md5($form_id . $phone_number);
 
   $expire = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings']['sms_code_expire'];
+  $length = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings']['sms_code_length'];
   $max_request = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings']['sms_code_max_request'];
 
   // Generate SMS verification code if not set or has expired
   if (!isset($_SESSION[$session_key]) || $_SESSION[$session_key]['time'] + 60 * $expire < time()) {
-    $_SESSION[$session_key]['code'] = sprintf('%06d', rand(0, 999999));
+    $_SESSION[$session_key]['code'] = sprintf('%0' . $length . 'd', rand(0, (int) str_repeat('9', $length)));
     $_SESSION[$session_key]['time'] = time();
     $_SESSION[$session_key]['count'] = 0;
   }
