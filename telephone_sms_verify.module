@@ -48,6 +48,7 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
 
   // Do not show sms code verification elements on field settings page
   if (!empty($element['#entity'])) {
+    $return['value']['#element_validate'][] = 'telephone_sms_verify_field_validate';
     $return['smscode'] = array(
       '#type' => 'textfield',
       '#size' => 6,
@@ -223,6 +224,25 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   return array('#type' => 'ajax', '#commands' => $commands);
 }
 
+function telephone_sms_verify_field_validate($element, &$form_state, $form) {
+  $field = $element['#array_parents'][0];
+  $delta = $element['#array_parents'][2];
+
+  $expire = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings']['sms_code_expire'];
+  $phone_number = _telephone_sms_verify_format_default_value($form_state['values'][$field][LANGUAGE_NONE][$delta]['value']);
+
+  //Compute session key
+  $form_id = $form_state['values']['form_id'];
+  $session_key = md5($form_id . $phone_number);
+
+  $max_request = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings']['sms_code_max_request'];
+
+  if (isset($_SESSION[$session_key]) && $_SESSION[$session_key]['time'] + 60 * $expire >= time() && $_SESSION[$session_key]['count'] >= $max_request) {
+    $minutes_left = ceil((($_SESSION[$session_key]['time'] + 60 * $expire) - time()) / 60);
+    form_error($element, t('You have reached the maximum request limitation, please try again after @expire minutes', array('@expire' => $minutes_left)));
+  }
+}
+
 function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
   $field = $element['#array_parents'][0];
   $delta = $element['#array_parents'][2];
@@ -241,16 +261,12 @@ function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
     $session_key = md5($form_id . $phone_number);
 
     $expire = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings']['sms_code_expire'];
-    $max_request = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings']['sms_code_max_request'];
 
     if (!isset($_SESSION[$session_key]) || $element['#value'] != $_SESSION[$session_key]['code']) {
       form_error($element, t('Your SMS verification code is not right'));
     }
     elseif ($_SESSION[$session_key]['time'] + 60 * $expire < time()) {
       form_error($element, t('This SMS code has expired.'));
-    }
-    elseif ($_SESSION[$session_key]['count'] >= $max_request) {
-      form_error($element, t('You have reached the maximum request limitation, please try in %expire minutes', array('%expire' => $expire)));
     }
   }
 }
