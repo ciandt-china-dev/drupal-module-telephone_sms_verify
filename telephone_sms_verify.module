@@ -321,10 +321,6 @@ function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
 function _telephone_sms_verify_user_in_roles($roles) {
   global $user;
 
-  if ($user->uid == 1) {
-    return TRUE;
-  }
-
   $intersect = array_intersect($roles, array_keys($user->roles));
 
   if (empty($intersect)) {
