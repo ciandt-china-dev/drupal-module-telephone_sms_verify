@@ -90,7 +90,7 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
     );
 
     // SMS verification is not required on the account edit page
-    if (!in_array($form['build_info']['form_id'], _telephone_sms_verify_explode_multi_lines($settings['sms_code_verify_required_only_on_phone_changes_forms']))) {
+    if (!in_array($form_state['build_info']['form_id'], _telephone_sms_verify_explode_multi_lines($settings['sms_code_verify_required_only_on_phone_changes_forms']))) {
       $return['smscode']['#required'] = TRUE;
     }
   }
