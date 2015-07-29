@@ -67,7 +67,7 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
   // Do not show sms code verification elements on field settings page
   // Show sms code verification elements on account edit page or other pages that the user need to see
   if ($must_display || (!empty($element['#entity']) &&
-      _telephone_sms_verify_show_smscode_to_roles($settings['sms_code_verify_not_displayed_roles']) &&
+      !_telephone_sms_verify_user_in_roles(array_keys(array_filter($settings['sms_code_verify_not_displayed_roles']))) &&
       !in_array($form_id, _telephone_sms_verify_explode_multi_lines($settings['sms_code_verify_not_displayed_forms'])))
   ) {
     $return['value']['#element_validate'][] = 'telephone_sms_verify_field_validate';
@@ -358,16 +358,6 @@ function _telephone_sms_verify_user_in_roles($roles) {
  */
 function _telephone_sms_verify_explode_multi_lines($lines) {
   return explode("\n", str_replace("\r", "", $lines));
-}
-
-/**
- * Check if the use can see the sms verification code element.
- *
- * @param $roles array
- * @return bool
- */
-function _telephone_sms_verify_show_smscode_to_roles($roles) {
-  return !_telephone_sms_verify_user_in_roles(array_keys(array_filter($roles)));
 }
 
 function _telephone_sms_verify_format_default_value($current, $default = '') {
