@@ -37,6 +37,8 @@ function telephone_sms_verify_field_widget_info() {
  * Implements hook_field_widget_form().
  */
 function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  $form_id = $form_state['build_info']['form_id'];
+
   $widget = $instance['widget'];
   $settings = $widget['settings'];
 
@@ -54,8 +56,8 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
   //User can control the widget show or hide in selected form
   drupal_alter('sms_verify_form', $form_configs);
   //Use user custom config
-  if (isset($form_configs[$form_state['build_info']['form_id']])) {
-    if ($form_configs[$form_state['build_info']['form_id']]) {
+  if (isset($form_configs[$form_id])) {
+    if ($form_configs[$form_id]) {
       $must_display = TRUE;
     }
     else {
@@ -66,7 +68,7 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
   // Show sms code verification elements on account edit page or other pages that the user need to see
   if ($must_display || (!empty($element['#entity']) &&
       _telephone_sms_verify_show_smscode_to_roles($settings['sms_code_verify_not_displayed_roles']) &&
-      !in_array($form_state['build_info']['form_id'], _telephone_sms_verify_explode_multi_lines($settings['sms_code_verify_not_displayed_forms'])))
+      !in_array($form_id, _telephone_sms_verify_explode_multi_lines($settings['sms_code_verify_not_displayed_forms'])))
   ) {
     $return['value']['#element_validate'][] = 'telephone_sms_verify_field_validate';
     $return['smscode'] = array(
@@ -102,7 +104,7 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
     );
 
     // SMS verification is not required on the account edit page
-    if (!in_array($form_state['build_info']['form_id'], _telephone_sms_verify_explode_multi_lines($settings['sms_code_verify_required_on_phone_changes_forms']))) {
+    if (!in_array($form_id, _telephone_sms_verify_explode_multi_lines($settings['sms_code_verify_required_on_phone_changes_forms']))) {
       $return['smscode']['#required'] = TRUE;
     }
   }
