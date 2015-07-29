@@ -55,18 +55,18 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
   drupal_alter('sms_verify_form', $form_configs);
   //Use user custom config
   if (isset($form_configs[$form_state['build_info']['form_id']])) {
-    if($form_configs[$form_state['build_info']['form_id']]) {
+    if ($form_configs[$form_state['build_info']['form_id']]) {
       $must_display = TRUE;
     }
-    else{
+    else {
       return $return;
     }
   }
   // Do not show sms code verification elements on field settings page
   // Show sms code verification elements on account edit page or other pages that the user need to see
   if ($must_display || (!empty($element['#entity']) &&
-    _telephone_sms_verify_show_smscode_to_roles($settings['sms_code_verify_not_required_roles']) &&
-    !in_array($form_state['build_info']['form_id'], _telephone_sms_verify_explode_multi_lines($settings['sms_code_verify_not_required_forms'])))
+      _telephone_sms_verify_show_smscode_to_roles($settings['sms_code_verify_not_required_roles']) &&
+      !in_array($form_state['build_info']['form_id'], _telephone_sms_verify_explode_multi_lines($settings['sms_code_verify_not_required_forms'])))
   ) {
     $return['value']['#element_validate'][] = 'telephone_sms_verify_field_validate';
     $return['smscode'] = array(
@@ -262,7 +262,12 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
     $template = t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE);
   }
 
-  $template = token_replace($template, array('phone_sms_verify' => array('verify_code' => $_SESSION[$session_key]['code'], 'expire_time' => $expire)));
+  $template = token_replace($template, array(
+    'phone_sms_verify' => array(
+      'verify_code' => $_SESSION[$session_key]['code'],
+      'expire_time' => $expire
+    )
+  ));
 
   // Send SMS verification code using SMS Framework
   sms_send($phone_number, $template);
@@ -337,7 +342,8 @@ function _telephone_sms_verify_user_in_roles($roles) {
 
   if (empty($intersect)) {
     return FALSE;
-  } else {
+  }
+  else {
     return TRUE;
   }
 }
