@@ -42,6 +42,36 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
   $widget = $instance['widget'];
   $settings = $widget['settings'];
 
+  // By default, display and require sms code verify element
+  $settings['display_sms_code_verify'] = TRUE;
+  $settings['require_sms_code_verify'] = TRUE;
+
+  // Do not show sms code verify element on field settings page
+  if (empty($element['#entity'])) {
+    $settings['display_sms_code_verify'] = FALSE;
+  }
+
+  // Allow to hide sms code verify element to specific roles
+  if (_telephone_sms_verify_user_in_roles(array_keys(array_filter($settings['sms_code_verify_not_displayed_roles'])))) {
+    $settings['display_sms_code_verify'] = FALSE;
+  }
+
+  // Allow to hide sms code verify element in specific forms
+  if (in_array($form_id, _telephone_sms_verify_explode_multi_lines($settings['sms_code_verify_not_displayed_forms']))) {
+    $settings['display_sms_code_verify'] = FALSE;
+  }
+
+  // Allow to mark sms code verify not required on specific forms
+  if (in_array($form_id, _telephone_sms_verify_explode_multi_lines($settings['sms_code_verify_required_on_phone_changes_forms']))) {
+    $settings['require_sms_code_verify'] = FALSE;
+  }
+
+  // Give user a chance finally alter the sms code verify element behavior
+  drupal_alter('sms_code_verify_forms_config', $forms_config = array(), $form, $form_state, $field, $instance, $langcode, $items, $delta, $element);
+  if (isset($forms_config[$form_id])) {
+    $settings += $forms_config[$form_id];
+  }
+
   $element += array(
     '#type' => module_exists('elements') ? 'telfield' : 'textfield',
     '#prefix' => '<div id="phone-number-' . $delta . '">',
@@ -51,26 +81,10 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
   );
 
   $return['value'] = $element;
-  $form_configs = array();
-  $must_display = FALSE;
-  //User can control the widget show or hide in selected form
-  drupal_alter('sms_verify_form', $form_configs);
-  //Use user custom config
-  if (isset($form_configs[$form_id])) {
-    if ($form_configs[$form_id]) {
-      $must_display = TRUE;
-    }
-    else {
-      return $return;
-    }
-  }
-  // Do not show sms code verification elements on field settings page
-  // Show sms code verification elements on account edit page or other pages that the user need to see
-  if ($must_display || (!empty($element['#entity']) &&
-      !_telephone_sms_verify_user_in_roles(array_keys(array_filter($settings['sms_code_verify_not_displayed_roles']))) &&
-      !in_array($form_id, _telephone_sms_verify_explode_multi_lines($settings['sms_code_verify_not_displayed_forms'])))
-  ) {
+
+  if ($settings['display_sms_code_verify']) {
     $return['value']['#element_validate'][] = 'telephone_sms_verify_field_validate';
+
     $return['smscode'] = array(
       '#type' => 'textfield',
       '#size' => 6,
@@ -78,6 +92,11 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
       '#prefix' => '<div class="sms-verification-code">',
       '#element_validate' => array('telephone_sms_verify_smscode_validate'),
     );
+
+    if ($settings['require_sms_code_verify']) {
+      $return['smscode']['#required'] = TRUE;
+    }
+
     $return['send_smscode'] = array(
       '#type' => 'button',
       '#ajax' => array(
@@ -102,11 +121,6 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
       ),
       '#submit' => array(),
     );
-
-    // SMS verification is not required on the account edit page
-    if (!in_array($form_id, _telephone_sms_verify_explode_multi_lines($settings['sms_code_verify_required_on_phone_changes_forms']))) {
-      $return['smscode']['#required'] = TRUE;
-    }
   }
 
   return $return;
