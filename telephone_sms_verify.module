@@ -67,7 +67,18 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
   }
 
   // Give user a chance finally alter the sms code verify element behavior
-  drupal_alter('sms_code_verify_forms_config', $forms_config = array(), $form, $form_state, $field, $instance, $langcode, $items, $delta, $element);
+  $forms_config = array();
+  $forms_context = array(
+    'form' => $form,
+    'form_state' => $form_state,
+    'field' => $field,
+    'instance' => $instance,
+    'langcode' => $langcode,
+    'items' => $items,
+    'delta' => $delta,
+    'element' => $element
+  );
+  drupal_alter('sms_code_verify_forms_config', $forms_config, $forms_context);
   if (isset($forms_config[$form_id])) {
     $settings += $forms_config[$form_id];
   }
