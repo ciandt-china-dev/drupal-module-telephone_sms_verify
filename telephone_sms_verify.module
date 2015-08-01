@@ -194,36 +194,29 @@ function telephone_sms_verify_field_widget_settings_form($field, $instance) {
 }
 
 function telephone_sms_verify_ajax_callback($form, $form_state) {
-  $field = $form_state['triggering_element']['#array_parents'][0];
+  $path = implode('/', array_slice($form_state['triggering_element']['#array_parents'], 0, -1));
+  $parent_element = _telephone_sms_verify_get_element_by_array_path($form, $path);
+  $parent_element_state = _telephone_sms_verify_get_element_by_array_path($form_state['values'], $path);
 
-  if(isset($form[$field][LANGUAGE_NONE])) {
-    $delta = $form_state['triggering_element']['#array_parents'][2];
-    $element = $form[$field][LANGUAGE_NONE][$delta]['value'];
-    $settings = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings'];
-    $phone_number = _telephone_sms_verify_format_default_value($form_state['values'][$field][LANGUAGE_NONE][$delta]['value']);
-  } else {
-    $element = $form[$field]['value'];
-    $settings = $form[$field]['#settings'];
-    $phone_number = _telephone_sms_verify_format_default_value($form_state['values'][$field]['value']);
-  }
-
-  $phone_number_default = _telephone_sms_verify_format_default_value($element['#default_value']);
+  $settings = $parent_element['#settings'];
+  $phone_number = _telephone_sms_verify_format_default_value($parent_element_state['value']);
+  $phone_number_default = _telephone_sms_verify_format_default_value($parent_element['value']['#default_value']);
 
   // Do not send sms verification code on account editing page and the phone number is not changed
   if ($settings['require_sms_code_verify_on_change'] && $phone_number == $phone_number_default) {
-    return $element;
+    return $parent_element['value'];
   }
 
   $commands = array();
 
-  if (empty($phone_number) || form_get_error($element) // if there are errors on phone number element
+  if (empty($phone_number) || form_get_error($parent_element['value']) // if there are errors on phone number element
   ) {
     // Clear all messages errors
     $commands[] = ajax_command_remove('#messages');
     // Show error messages before the AJAX wrapper element
     $commands[] = ajax_command_before(NULL, theme('status_messages'));
     // Update the AJAX wrapper element
-    $commands[] = ajax_command_replace(NULL, drupal_render($element));
+    $commands[] = ajax_command_replace(NULL, drupal_render($parent_element['value']));
     return array('#type' => 'ajax', '#commands' => $commands);
   }
 
@@ -263,12 +256,12 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   // Send SMS verification code using SMS Framework
   sms_send($phone_number, $template);
 
-  $id_prefix = implode('-', preg_replace('$_$', '-', $form[$field][LANGUAGE_NONE][$delta]['#array_parents']));
+  $id_prefix = implode('-', preg_replace('$_$', '-', $parent_element['#array_parents']));
 
   // Clear all messages errors
   $commands[] = ajax_command_remove('#messages');
   // Update the AJAX wrapper element
-  $commands[] = ajax_command_replace(NULL, drupal_render($element));
+  $commands[] = ajax_command_replace(NULL, drupal_render($parent_element['value']));
   // Trigger javascript messages send countdown
   $commands[] = ajax_command_invoke(NULL, 'DrupalTelephoneSMSVerifyCountDown', array(
     '#' . $id_prefix . '-send-smscode-btn',
@@ -279,16 +272,12 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
 }
 
 function telephone_sms_verify_field_validate($element, &$form_state, $form) {
-  $field = $element['#array_parents'][0];
+  $path = implode('/', array_slice($element['#array_parents'], 0, -1));
+  $parent_element = _telephone_sms_verify_get_element_by_array_path($form, $path);
+  $parent_element_state = _telephone_sms_verify_get_element_by_array_path($form_state['values'], $path);
 
-  if(isset($form[$field][LANGUAGE_NONE])) {
-    $delta = $element['#array_parents'][2];
-    $settings = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings'];
-    $phone_number = _telephone_sms_verify_format_default_value($form_state['values'][$field][LANGUAGE_NONE][$delta]['value']);
-  } else {
-    $settings = $form[$field]['#settings'];
-    $phone_number = _telephone_sms_verify_format_default_value($form_state['values'][$field]['value']);
-  }
+  $settings = $parent_element['#settings'];
+  $phone_number = _telephone_sms_verify_format_default_value($parent_element_state['value']);
 
   $expire = $settings['sms_code_expire'];
 
@@ -305,18 +294,15 @@ function telephone_sms_verify_field_validate($element, &$form_state, $form) {
 }
 
 function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
-  $field = $element['#array_parents'][0];
+  $path = implode('/', array_slice($element['#array_parents'], 0, -1));
 
-  if(isset($form[$field][LANGUAGE_NONE])) {
-    $delta = $element['#array_parents'][2];
-    $settings = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings'];
-    $phone_number = _telephone_sms_verify_format_default_value($form_state['values'][$field][LANGUAGE_NONE][$delta]['value']);
-  } else {
-    $settings = $form[$field]['#settings'];
-    $phone_number = _telephone_sms_verify_format_default_value($form_state['values'][$field]['value']);
-  }
+  $parent_element = _telephone_sms_verify_get_element_by_array_path($form, $path);
+  $parent_element_state = _telephone_sms_verify_get_element_by_array_path($form_state['values'], $path);
 
-  $phone_number_default = isset($element['#default_value']) ? $element['##default_value'] : '';
+  $settings = $parent_element['#settings'];
+  $phone_number = _telephone_sms_verify_format_default_value($parent_element_state['value']);
+
+  $phone_number_default = isset($parent_element['value']['#default_value']) ? $parent_element['value']['#default_value'] : '';
 
   // Only validates this field if the telephone number is newly added or changed
   if ($phone_number != $phone_number_default) {
@@ -428,16 +414,13 @@ function _telephone_sms_verify_element_expand($element) {
       '#required' => $settings['require_sms_code_verify_on_change'],
     );
 
-    $array_path = $element['#array_parents'];
-    array_push($array_path, 'value');
-
     $element['send_smscode'] = array(
+      '#name' => $id_prefix . '-send-smscode-btn-op',
       '#type' => 'button',
       '#ajax' => array(
         'wrapper' => $id_prefix . '-value-wrapper',
         'callback' => 'telephone_sms_verify_ajax_callback',
       ),
-      '#name' => $id_prefix . '-send-smscode-btn-op',
       '#value' => t('Send SMS Code'),
       '#weight' => 2,
       '#prefix' => '<div id="' . $id_prefix . '-send-smscode-btn-wrapper"><div id="' . $id_prefix . '-send-smscode-btn">',
@@ -453,11 +436,31 @@ function _telephone_sms_verify_element_expand($element) {
       ),
       '#limit_validation_errors' => array(
         // Validate only the phone number field on AJAX call
-        $array_path,
+        array_merge($element['#array_parents'], array('value')),
       ),
       '#submit' => array(),
     );
   }
 
   return $element;
+}
+
+function _telephone_sms_verify_get_element_by_array_path($arr, $path) {
+  if (!$path) {
+    return NULL;
+  }
+
+  $segments = is_array($path) ? $path : explode('/', $path);
+
+  $cur =& $arr;
+
+  foreach ($segments as $segment) {
+    if (!isset($cur[$segment])) {
+      return NULL;
+    }
+
+    $cur = $cur[$segment];
+  }
+
+  return $cur;
 }
