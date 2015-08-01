@@ -230,25 +230,26 @@ function telephone_sms_verify_field_widget_settings_form($field, $instance) {
 function telephone_sms_verify_ajax_callback($form, $form_state) {
   $field = $form_state['triggering_element']['#array_parents'][0];
   $delta = $form_state['triggering_element']['#array_parents'][2];
+  $element = $form[$field][LANGUAGE_NONE][$delta]['value'];
 
   $phone_number = _telephone_sms_verify_format_default_value($form_state['values'][$field][LANGUAGE_NONE][$delta]['value']);
-  $phone_number_default = _telephone_sms_verify_format_default_value($form[$field][LANGUAGE_NONE][$delta]['value']['#default_value']);
+  $phone_number_default = _telephone_sms_verify_format_default_value($element['#default_value']);
 
   // Do not send sms verification code on account editing page and the phone number is not changed
   if ($form['#user_category'] == 'account' && $phone_number == $phone_number_default) {
-    return $form[$field][LANGUAGE_NONE][$delta]['value'];
+    return $element;
   }
 
   $commands = array();
 
-  if (empty($phone_number) || form_get_error($form[$field][LANGUAGE_NONE][$delta]['value']) // if there are errors on phone number element
+  if (empty($phone_number) || form_get_error($element) // if there are errors on phone number element
   ) {
     // Clear all messages errors
     $commands[] = ajax_command_remove('#messages');
     // Show error messages before the AJAX wrapper element
     $commands[] = ajax_command_before(NULL, theme('status_messages'));
     // Update the AJAX wrapper element
-    $commands[] = ajax_command_replace(NULL, drupal_render($form[$field][LANGUAGE_NONE][$delta]['value']));
+    $commands[] = ajax_command_replace(NULL, drupal_render($element));
     return array('#type' => 'ajax', '#commands' => $commands);
   }
 
@@ -291,7 +292,7 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   // Clear all messages errors
   $commands[] = ajax_command_remove('#messages');
   // Update the AJAX wrapper element
-  $commands[] = ajax_command_replace(NULL, drupal_render($form[$field][LANGUAGE_NONE][$delta]['value']));
+  $commands[] = ajax_command_replace(NULL, drupal_render($element));
   // Trigger javascript messages send countdown
   $commands[] = ajax_command_invoke(NULL, 'DrupalTelephoneSMSVerifyCountDown');
 
@@ -322,7 +323,7 @@ function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
   $delta = $element['#array_parents'][2];
 
   $phone_number = _telephone_sms_verify_format_default_value($form_state['values'][$field][LANGUAGE_NONE][$delta]['value']);
-  $phone_number_default = _telephone_sms_verify_format_default_value($form[$field][LANGUAGE_NONE][$delta]['value']['#default_value']);
+  $phone_number_default = _telephone_sms_verify_format_default_value($element['#default_value']);
 
   // Only validates this field if the telephone number is newly added or changed
   if ($phone_number != $phone_number_default) {
