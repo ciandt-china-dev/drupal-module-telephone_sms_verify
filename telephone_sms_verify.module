@@ -44,7 +44,7 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
 
   // By default, display and require sms code verify element
   $settings['display_sms_code_verify'] = TRUE;
-  $settings['require_sms_code_verify'] = TRUE;
+  $settings['require_sms_code_verify_on_change'] = TRUE;
 
   // Do not show sms code verify element on field settings page
   if (empty($element['#entity'])) {
@@ -63,7 +63,7 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
 
   // Allow to mark sms code verify not required on specific forms
   if (in_array($form_id, _telephone_sms_verify_explode_multi_lines($settings['sms_code_verify_required_on_phone_changes_forms']))) {
-    $settings['require_sms_code_verify'] = FALSE;
+    $settings['require_sms_code_verify_on_change'] = FALSE;
   }
 
   // Give user a chance finally alter the sms code verify element behavior
@@ -93,7 +93,7 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
       '#element_validate' => array('telephone_sms_verify_smscode_validate'),
     );
 
-    if ($settings['require_sms_code_verify']) {
+    if ($settings['require_sms_code_verify_on_change']) {
       $return['smscode']['#required'] = TRUE;
     }
 
