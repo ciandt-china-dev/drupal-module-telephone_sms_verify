@@ -413,6 +413,7 @@ function _telephone_sms_verify_element_expand($element) {
     '#prefix' => '<div id="' . $id_prefix . '-value-wrapper">',
     '#suffix' => '</div>',
     '#placeholder' => $settings['placeholder'],
+    '#form_placeholder' => TRUE,
     '#element_validate' => array('telephone_sms_verify_field_validate'),
   );
 
