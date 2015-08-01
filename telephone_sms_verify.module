@@ -231,6 +231,7 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   $field = $form_state['triggering_element']['#array_parents'][0];
   $delta = $form_state['triggering_element']['#array_parents'][2];
   $element = $form[$field][LANGUAGE_NONE][$delta]['value'];
+  $settings = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings'];
 
   $phone_number = _telephone_sms_verify_format_default_value($form_state['values'][$field][LANGUAGE_NONE][$delta]['value']);
   $phone_number_default = _telephone_sms_verify_format_default_value($element['#default_value']);
@@ -257,9 +258,9 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   $form_id = $form_state['values']['form_id'];
   $session_key = md5($form_id . $phone_number);
 
-  $expire = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings']['sms_code_expire'];
-  $length = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings']['sms_code_length'];
-  $max_request = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings']['sms_code_max_request'];
+  $expire = $settings['sms_code_expire'];
+  $length = $settings['sms_code_length'];
+  $max_request = $settings['sms_code_max_request'];
 
   // Generate SMS verification code if not set or has expired
   if (!isset($_SESSION[$session_key]) || $_SESSION[$session_key]['time'] + 60 * $expire < time()) {
@@ -272,7 +273,7 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   }
 
   // Get SMS verification template from field widget settings
-  $template = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings']['sms_template'];
+  $template = $settings['sms_template'];
 
   // Set default value is no template is configured
   if (empty($template)) {
@@ -302,15 +303,16 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
 function telephone_sms_verify_field_validate($element, &$form_state, $form) {
   $field = $element['#array_parents'][0];
   $delta = $element['#array_parents'][2];
+  $settings = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings'];
 
-  $expire = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings']['sms_code_expire'];
+  $expire = $settings['sms_code_expire'];
   $phone_number = _telephone_sms_verify_format_default_value($form_state['values'][$field][LANGUAGE_NONE][$delta]['value']);
 
   //Compute session key
   $form_id = $form_state['values']['form_id'];
   $session_key = md5($form_id . $phone_number);
 
-  $max_request = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings']['sms_code_max_request'];
+  $max_request = $settings['sms_code_max_request'];
 
   if (isset($_SESSION[$session_key]) && $_SESSION[$session_key]['time'] + 60 * $expire >= time() && $_SESSION[$session_key]['count'] >= $max_request) {
     $minutes_left = ceil((($_SESSION[$session_key]['time'] + 60 * $expire) - time()) / 60);
@@ -321,6 +323,7 @@ function telephone_sms_verify_field_validate($element, &$form_state, $form) {
 function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
   $field = $element['#array_parents'][0];
   $delta = $element['#array_parents'][2];
+  $settings = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings'];
 
   $phone_number = _telephone_sms_verify_format_default_value($form_state['values'][$field][LANGUAGE_NONE][$delta]['value']);
   $phone_number_default = _telephone_sms_verify_format_default_value($element['#default_value']);
@@ -335,7 +338,7 @@ function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
     $form_id = $form_state['values']['form_id'];
     $session_key = md5($form_id . $phone_number);
 
-    $expire = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings']['sms_code_expire'];
+    $expire = $settings['sms_code_expire'];
 
     if (!isset($_SESSION[$session_key]) || $element['#value'] != $_SESSION[$session_key]['code']) {
       form_error($element, t('Your SMS verification code is not right'));
