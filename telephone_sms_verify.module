@@ -238,7 +238,7 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   $phone_number_default = _telephone_sms_verify_format_default_value($element['#default_value']);
 
   // Do not send sms verification code on account editing page and the phone number is not changed
-  if ($form['#user_category'] == 'account' && $phone_number == $phone_number_default) {
+  if ($settings['require_sms_code_verify_on_change'] && $phone_number == $phone_number_default) {
     return $element;
   }
 
