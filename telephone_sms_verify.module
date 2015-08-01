@@ -83,9 +83,12 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
     $settings += $forms_config[$form_id];
   }
 
+  $id_prefix = preg_replace('$_$', '-', $element['#field_name']) . '-' . $element['#language'] . '-' . $delta;
+
   $element += array(
     '#type' => module_exists('elements') ? 'telfield' : 'textfield',
-    '#prefix' => '<div id="phone-number-' . $delta . '">',
+    '#weight' => 0,
+    '#prefix' => '<div id="' . $id_prefix . '-value-wrapper">',
     '#suffix' => '</div>',
     '#placeholder' => $settings['placeholder'],
     '#default_value' => isset($items[$delta]['value']) ? $items[$delta]['value'] : '',
@@ -94,13 +97,15 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
   $return['value'] = $element;
 
   if ($settings['display_sms_code_verify']) {
+
     $return['value']['#element_validate'][] = 'telephone_sms_verify_field_validate';
 
     $return['smscode'] = array(
       '#type' => 'textfield',
       '#size' => 6,
       '#title' => t('SMS Code'),
-      '#prefix' => '<div class="sms-verification-code">',
+      '#weight' => 1,
+      '#prefix' => '<div id="' . $id_prefix . '-sms-verification-code-wrapper" class="sms-verification-code">',
       '#element_validate' => array('telephone_sms_verify_smscode_validate'),
     );
 
@@ -111,12 +116,14 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
     $return['send_smscode'] = array(
       '#type' => 'button',
       '#ajax' => array(
-        'wrapper' => 'phone-number-' . $delta,
+        'wrapper' => $id_prefix . '-value-wrapper',
         'callback' => 'telephone_sms_verify_ajax_callback',
       ),
+      '#name' => $id_prefix . '-send-smscode-btn-op',
       '#value' => t('Send SMS Code'),
-      '#prefix' => '<div id="send-smscode"><div id="send-smscode-btn">',
-      '#suffix' => '</div><div id="send-smscode-count-down"></div></div></div>',
+      '#weight' => 2,
+      '#prefix' => '<div id="' . $id_prefix . '-send-smscode-btn-wrapper"><div id="' . $id_prefix . '-send-smscode-btn">',
+      '#suffix' => '</div><div id="' . $id_prefix . '-send-smscode-count-down"></div></div></div>',
       '#attached' => array(
         'js' => array(
           drupal_get_path('module', 'telephone_sms_verify') . '/telephone_sms_verify.js',
@@ -302,12 +309,18 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   // Send SMS verification code using SMS Framework
   sms_send($phone_number, $template);
 
+
+  $id_prefix = preg_replace('$_$', '-', $element['#field_name']) . '-' . $element['#language'] . '-' . $delta;
+
   // Clear all messages errors
   $commands[] = ajax_command_remove('#messages');
   // Update the AJAX wrapper element
   $commands[] = ajax_command_replace(NULL, drupal_render($element));
   // Trigger javascript messages send countdown
-  $commands[] = ajax_command_invoke(NULL, 'DrupalTelephoneSMSVerifyCountDown');
+  $commands[] = ajax_command_invoke(NULL, 'DrupalTelephoneSMSVerifyCountDown', array(
+    '#' . $id_prefix . '-send-smscode-btn',
+    '#' . $id_prefix . '-send-smscode-count-down'
+  ));
 
   return array('#type' => 'ajax', '#commands' => $commands);
 }

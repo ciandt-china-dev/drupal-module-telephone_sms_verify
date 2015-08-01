@@ -17,9 +17,9 @@
     }
   }
 
-  $.fn.DrupalTelephoneSMSVerifyCountDown = function() {
-    var $smsCodeBtn = $('#send-smscode-btn'),
-      $countDownBtn = $('#send-smscode-count-down');
+  $.fn.DrupalTelephoneSMSVerifyCountDown = function(btn, count_down) {
+    var $smsCodeBtn = $(btn),
+      $countDownBtn = $(count_down);
 
     $smsCodeBtn.hide();
     $countDownBtn.show();
