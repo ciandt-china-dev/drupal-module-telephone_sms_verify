@@ -194,7 +194,11 @@ function telephone_sms_verify_field_widget_settings_form($field, $instance) {
 }
 
 function telephone_sms_verify_ajax_callback($form, $form_state) {
-  $path = implode('/', array_slice($form_state['triggering_element']['#array_parents'], 0, -1));
+  if (preg_match('/captcha-verify-op$/', $form_state['triggering_element']['#name'])) {
+    $path = implode('/', array_slice($form_state['triggering_element']['#array_parents'], 0, -3));
+  } else {
+    $path = implode('/', array_slice($form_state['triggering_element']['#array_parents'], 0, -1));
+  }
   $parent_element = _telephone_sms_verify_get_element_by_array_path($form, $path);
   $parent_element_state = _telephone_sms_verify_get_element_by_array_path($form_state['values'], $path);
 
@@ -218,6 +222,23 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
     // Update the AJAX wrapper element
     $commands[] = ajax_command_replace(NULL, drupal_render($parent_element['value']));
     return array('#type' => 'ajax', '#commands' => $commands);
+  }
+
+  $id_prefix = implode('-', preg_replace('$_$', '-', $parent_element['#array_parents']));
+
+  if ($settings['captcha'] && module_exists('captcha')) {
+    if ($form_state['triggering_element']['#name'] == $id_prefix . '-send-smscode-btn-op' || form_get_error($parent_element['smscode_captcha']['container']['captcha']['captcha_widgets']['captcha_response'])) {
+      // Clear all messages errors
+      $commands[] = ajax_command_remove('#messages');
+      // Show error messages before the AJAX wrapper element
+      $commands[] = ajax_command_before(NULL, theme('status_messages'));
+      $commands[] = ajax_command_replace(NULL, drupal_render($parent_element['value']));
+      $commands[] = ajax_command_replace('#' . $id_prefix . '-captcha-wrapper', drupal_render($parent_element['smscode_captcha']));
+      return array('#type' => 'ajax', '#commands' => $commands);
+    }
+    else {
+      $commands[] = ajax_command_replace('#' . $id_prefix . '-captcha-wrapper', '<div id="' . $id_prefix . '-captcha-wrapper"></div>');
+    }
   }
 
   //Compute session key
@@ -255,8 +276,6 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
 
   // Send SMS verification code using SMS Framework
   sms_send($phone_number, $template);
-
-  $id_prefix = implode('-', preg_replace('$_$', '-', $parent_element['#array_parents']));
 
   // Clear all messages errors
   $commands[] = ajax_command_remove('#messages');
@@ -373,6 +392,8 @@ function telephone_sms_verify_element_info() {
       'sms_code_max_request' => 3,
       'display_sms_code_verify' => TRUE,
       'require_sms_code_verify_on_change' => TRUE,
+      'captcha' => TRUE,
+      'captcha_type' => 'default',
     )
   );
   return $type;
@@ -404,6 +425,96 @@ function _telephone_sms_verify_element_expand($element) {
   );
 
   if ($settings['display_sms_code_verify']) {
+    if ($settings['captcha'] && module_exists('captcha')) {
+      $element['smscode_captcha'] = array(
+        '#type' => 'container',
+        '#prefix' => '<div id="' . $id_prefix . '-captcha-wrapper">',
+        '#suffix' => '</div>',
+      );
+
+      $element['smscode_captcha']['overlay'] = array(
+        '#type' => 'container',
+        '#access' => FALSE,
+        '#attributes' => array(
+          'style' => array('
+            width: 100%;
+            height: 100%;
+
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1001;
+            opacity: 0.7;
+
+            background: #000 none repeat scroll 0 0;
+          '),
+        ),
+      );
+
+      $element['smscode_captcha']['container'] = array(
+        '#type' => 'container',
+        '#access' => FALSE,
+        '#attributes' => array(
+          'style' => array('
+            width: 40%;
+
+            position: fixed;
+            top: 15%;
+            left: 30%;
+            z-index: 1002;
+            overflow: hidden;
+
+            border-radius: 6px;
+            background-color: #fff;
+
+            padding: 10px 20px;
+          '),
+        ),
+      );
+
+      $element['smscode_captcha']['container']['close'] = array(
+        '#markup' => '<a class="boxclose" data-id="' . $id_prefix . '"></a>',
+        '#attached' => array(
+          'js' => array(
+            drupal_get_path('module', 'telephone_sms_verify') . '/telephone_sms_verify.js',
+          ),
+          'css' => array(
+            drupal_get_path('module', 'telephone_sms_verify') . '/telephone_sms_verify.css',
+          ),
+        ),
+      );
+
+      $element['smscode_captcha']['container']['captcha'] = array(
+        '#type' => 'captcha',
+        '#captcha_type' => $settings['captcha_type'],
+      );
+
+      $element['smscode_captcha']['container']['verify'] = array(
+        '#name' => $id_prefix . '-captcha-verify-op',
+        '#type' => 'button',
+        '#ajax' => array(
+          'wrapper' => $id_prefix . '-value-wrapper',
+          'callback' => 'telephone_sms_verify_ajax_callback',
+        ),
+        '#value' => t('Verify'),
+        '#limit_validation_errors' => array(
+          array('captcha_response'),
+          array_merge($element['#array_parents'], array('value')),
+          array_merge($element['#array_parents'], array(
+            'smscode_captcha',
+            'container',
+            'captcha'
+          )),
+        ),
+      );
+
+      // Only show on ajax forms
+      if ($_GET['q'] == 'system/ajax') {
+        $element['smscode_captcha']['overlay']['#access'] = TRUE;
+        $element['smscode_captcha']['container']['#access'] = TRUE;
+      }
+    }
+
     $element['smscode'] = array(
       '#type' => 'textfield',
       '#size' => 6,

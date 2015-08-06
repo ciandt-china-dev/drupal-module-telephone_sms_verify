@@ -1,0 +1,21 @@
+a.boxclose {
+    border: 1px solid #aeaeae;
+    border-radius: 30px;
+    color: #605f61;
+    cursor: pointer;
+    display: inline-block;
+    float: right;
+    font-size: 18px;
+    font-weight: bold;
+    line-height: 0;
+    padding: 10px 3px 12px;
+}
+
+a.boxclose:hover {
+    background: #605f61 none repeat scroll 0 0;
+    color: #fff;
+}
+
+.boxclose:before {
+    content: "×";
+}
