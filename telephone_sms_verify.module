@@ -384,7 +384,10 @@ function telephone_sms_verify_element_info() {
   $type['telephone_with_sms_verify'] = array(
     '#input' => TRUE,
     '#process' => array('_telephone_sms_verify_element_expand'),
+    '#description' => t('Telephone number'),
+    '#default_value' => '',
     '#default_settings' => array(
+      'placeholder' => t('Phone Number'),
       'sms_template' => t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE),
       'sms_code_expire' => 30,
       'sms_code_length' => 6,
