@@ -383,9 +383,10 @@ function _telephone_sms_verify_format_default_value($current, $default = '') {
 function telephone_sms_verify_element_info() {
   $type['telephone_with_sms_verify'] = array(
     '#input' => TRUE,
-    '#process' => array('_telephone_sms_verify_element_expand'),
+    '#process' => array('_telephone_sms_verify_element_expand', 'form_process_container'),
     '#description' => t('Telephone number'),
     '#default_value' => '',
+    '#theme_wrappers' => array('container'),
     '#default_settings' => array(
       'placeholder' => t('Phone Number'),
       'sms_template' => t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE),
@@ -397,7 +398,7 @@ function telephone_sms_verify_element_info() {
       'require_sms_code_verify_on_change' => TRUE,
       'captcha' => TRUE,
       'captcha_type' => 'default',
-    )
+    ),
   );
   return $type;
 }
