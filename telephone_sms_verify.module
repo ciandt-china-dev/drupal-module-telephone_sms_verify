@@ -14,12 +14,16 @@ function telephone_sms_verify_field_widget_info() {
     'telephone_sms_verify' => array(
       'label' => t('Telephone number with SMS verification'),
       'settings' => array(
-        'placeholder' => '',
+        'placeholder' => t('Phone Number'),
+        'captcha' => TRUE,
+        'captcha_type' => 'default',
         'sms_template' => t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE),
         'sms_code_expire' => 30,
         'sms_code_length' => 6,
         'sms_code_count_down' => 30,
         'sms_code_max_request' => 3,
+        'display_sms_code_verify' => TRUE,
+        'require_sms_code_verify_on_change' => TRUE,
         'sms_code_verify_not_displayed_roles' => array(),
         'sms_code_verify_not_displayed_forms' => '',
         'sms_code_verify_required_on_phone_changes_forms' => "user_profile_form",
@@ -41,10 +45,6 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
 
   $widget = $instance['widget'];
   $settings = $widget['settings'];
-
-  // By default, display and require sms code verify element
-  $settings['display_sms_code_verify'] = TRUE;
-  $settings['require_sms_code_verify_on_change'] = TRUE;
 
   // Do not show sms code verify element on field settings page
   if (empty($element['#entity'])) {
@@ -389,6 +389,8 @@ function telephone_sms_verify_element_info() {
     '#theme_wrappers' => array('container'),
     '#default_settings' => array(
       'placeholder' => t('Phone Number'),
+      'captcha' => TRUE,
+      'captcha_type' => 'default',
       'sms_template' => t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE),
       'sms_code_expire' => 30,
       'sms_code_length' => 6,
@@ -396,8 +398,6 @@ function telephone_sms_verify_element_info() {
       'sms_code_max_request' => 3,
       'display_sms_code_verify' => TRUE,
       'require_sms_code_verify_on_change' => TRUE,
-      'captcha' => TRUE,
-      'captcha_type' => 'default',
     ),
   );
   return $type;
