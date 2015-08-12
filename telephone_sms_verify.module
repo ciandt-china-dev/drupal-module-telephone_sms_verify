@@ -200,11 +200,10 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
     $path = implode('/', array_slice($form_state['triggering_element']['#array_parents'], 0, -1));
   }
   $parent_element = _telephone_sms_verify_get_element_by_array_path($form, $path);
-  $parent_element_state = _telephone_sms_verify_get_element_by_array_path($form_state['values'], $path);
 
   $settings = $parent_element['#settings'];
-  $phone_number = _telephone_sms_verify_format_default_value($parent_element_state['value']);
-  $phone_number_default = _telephone_sms_verify_format_default_value($parent_element['value']['#default_value']);
+  $phone_number = _telephone_sms_verify_format_default_value($parent_element['#value']);
+  $phone_number_default = _telephone_sms_verify_format_default_value($parent_element['#default_value']);
 
   // Do not send sms verification code on account editing page and the phone number is not changed
   if ($settings['require_sms_code_verify_on_change'] && $phone_number == $phone_number_default) {
@@ -288,6 +287,10 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   ));
 
   return array('#type' => 'ajax', '#commands' => $commands);
+}
+
+function telephone_sms_verify_validate($element, &$form_state, $form) {
+  form_set_value($element, $element['#value'], $form_state);
 }
 
 function telephone_sms_verify_value_validate($element, &$form_state, $form) {
@@ -400,8 +403,14 @@ function telephone_sms_verify_element_info() {
       'display_sms_code_verify' => TRUE,
       'require_sms_code_verify_on_change' => TRUE,
     ),
+    '#value_callback' => '_telephone_sms_verify_element_value',
+    '#element_validate' => array('telephone_sms_verify_validate'),
   );
   return $type;
+}
+
+function _telephone_sms_verify_element_value($element, $input, $form_state) {
+  return $input['value'];
 }
 
 function _telephone_sms_verify_element_expand($element) {
