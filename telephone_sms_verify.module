@@ -382,6 +382,7 @@ function _telephone_sms_verify_format_default_value($current, $default = '') {
  */
 function telephone_sms_verify_element_info() {
   $type['telephone_with_sms_verify'] = array(
+    '#tree' => TRUE,
     '#input' => TRUE,
     '#process' => array('_telephone_sms_verify_element_expand', 'form_process_container'),
     '#description' => t('Telephone number'),
@@ -394,7 +395,7 @@ function telephone_sms_verify_element_info() {
       'sms_template' => t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE),
       'sms_code_expire' => 30,
       'sms_code_length' => 6,
-      'sms_code_count_down' => 10,
+      'sms_code_count_down' => 30,
       'sms_code_max_request' => 3,
       'display_sms_code_verify' => TRUE,
       'require_sms_code_verify_on_change' => TRUE,
@@ -404,7 +405,6 @@ function telephone_sms_verify_element_info() {
 }
 
 function _telephone_sms_verify_element_expand($element) {
-  $element['#tree'] = TRUE;
   if (!isset($element['#settings'])) {
     $element['#settings'] = array();
   }
