@@ -424,9 +424,12 @@ function _telephone_sms_verify_element_expand($element) {
     '#prefix' => '<div id="' . $id_prefix . '-value-wrapper">',
     '#suffix' => '</div>',
     '#placeholder' => $settings['placeholder'],
-    '#form_placeholder' => TRUE,
     '#element_validate' => array('telephone_sms_verify_field_validate'),
   );
+
+  if (isset($complete_form['#form_placeholder'])) {
+    $element['value']['#form_placeholder'] = $complete_form['#form_placeholder'];
+  }
 
   if ($settings['display_sms_code_verify']) {
     if ($settings['captcha'] && module_exists('captcha')) {
