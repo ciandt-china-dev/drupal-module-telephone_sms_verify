@@ -413,16 +413,21 @@ function _telephone_sms_verify_element_expand($element, &$form_state, $complete_
   }
 
   if ($settings['display_sms_code_verify']) {
-    if ($settings['captcha'] && module_exists('captcha')) {
-      $element['smscode_captcha'] = array(
-        '#type' => 'container',
-        '#prefix' => '<div id="' . $id_prefix . '-captcha-wrapper">',
-        '#suffix' => '</div>',
-      );
-
+    $element['smscode_captcha'] = array(
+      '#type' => 'container',
+      '#prefix' => '<div id="' . $id_prefix . '-captcha-wrapper">',
+      '#suffix' => '</div>',
+    );
+    if ($settings['captcha'] && module_exists('captcha') && $_GET['q'] == 'system/ajax' &&
+      (
+        // We need captcha to be presented in the ajax form rebuild stage, but not when the captcha verify button is clicked, because next step is to submit the entire form, and we do not want to validate the capture element in this step.
+        $form_state['rebuild'] == TRUE && $form_state['triggering_element']['#name'] != 'phone-captcha-verify-op' ||
+        // We need captcha to be presented in the normal form build stage so that the captcha can be validated only when not in the form submit process
+        $form_state['rebuild'] == FALSE && (!isset($form_state['triggering_element']) || $form_state['triggering_element']['#name'] != 'op')
+      )
+    ) {
       $element['smscode_captcha']['overlay'] = array(
         '#type' => 'container',
-        '#access' => FALSE,
         '#attributes' => array(
           'style' => array('
             width: 100%;
@@ -441,7 +446,6 @@ function _telephone_sms_verify_element_expand($element, &$form_state, $complete_
 
       $element['smscode_captcha']['container'] = array(
         '#type' => 'container',
-        '#access' => FALSE,
         '#attributes' => array(
           'style' => array('
             width: 40%;
@@ -500,12 +504,6 @@ function _telephone_sms_verify_element_expand($element, &$form_state, $complete_
           )),
         ),
       );
-
-      // Only show on ajax forms
-      if ($_GET['q'] == 'system/ajax') {
-        $element['smscode_captcha']['overlay']['#access'] = TRUE;
-        $element['smscode_captcha']['container']['#access'] = TRUE;
-      }
     }
 
     $element['smscode'] = array(
