@@ -72,23 +72,6 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
     $settings['require_sms_code_verify_on_change'] = FALSE;
   }
 
-  // Give user a chance finally alter the sms code verify element behavior
-  $forms_config = array();
-  $forms_context = array(
-    'form' => $form,
-    'form_state' => $form_state,
-    'field' => $field,
-    'instance' => $instance,
-    'langcode' => $langcode,
-    'items' => $items,
-    'delta' => $delta,
-    'element' => $element
-  );
-  drupal_alter('sms_code_verify_forms_config', $forms_config, $forms_context);
-  if (isset($forms_config[$form_id])) {
-    $settings += $forms_config[$form_id];
-  }
-
   $element += array(
     '#type' => 'telephone_with_sms_verify',
     '#settings' => $settings,
@@ -392,7 +375,7 @@ function _telephone_sms_verify_element_value($element, $input, $form_state) {
   return $input['value'];
 }
 
-function _telephone_sms_verify_element_expand($element) {
+function _telephone_sms_verify_element_expand($element, &$form_state, $complete_form) {
   if (!isset($element['#settings'])) {
     $element['#settings'] = array();
   }
@@ -400,6 +383,14 @@ function _telephone_sms_verify_element_expand($element) {
   $settings = $element['#settings'];
 
   $settings['display_sms_code_verify'] &= !user_access('bypass telephone sms verify');
+
+  // Give user a chance finally alter the sms code verify element behavior
+  $context = array(
+    'element' => $element,
+    'form' => $complete_form,
+    'form_state' => $form_state,
+  );
+  drupal_alter('sms_code_verify_element_settings', $settings, $context);
 
   $id_prefix = implode('-', preg_replace('$_$', '-', $element['#array_parents']));
 
