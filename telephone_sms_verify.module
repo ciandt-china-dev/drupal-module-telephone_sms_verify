@@ -7,6 +7,18 @@
 define('DEFAULT_VERIFICATION_MESSAGE_TEMPLATE', 'Your SMS verification code is [phone_sms_verify:verify_code]. This code will be expired in [phone_sms_verify:expire_time] minutes.');
 
 /**
+ * Implements hook_permission().
+ */
+function telephone_sms_verify_permission() {
+  return array(
+    'bypass telephone sms verify' =>  array(
+      'title' => t('Bypass telephone sms code verification'),
+      'restrict access' => TRUE,
+    ),
+  );
+}
+
+/**
  * Implements hook_field_widget_info().
  */
 function telephone_sms_verify_field_widget_info() {
@@ -24,7 +36,6 @@ function telephone_sms_verify_field_widget_info() {
         'sms_code_max_request' => variable_get('telephone_sms_verify_sms_code_max_request', 3),
         'display_sms_code_verify' => TRUE,
         'require_sms_code_verify_on_change' => TRUE,
-        'sms_code_verify_not_displayed_roles' => array(),
         'sms_code_verify_not_displayed_forms' => '',
         'sms_code_verify_required_on_phone_changes_forms' => "user_profile_form",
       ),
@@ -48,11 +59,6 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
 
   // Do not show sms code verify element on field settings page
   if (empty($element['#entity'])) {
-    $settings['display_sms_code_verify'] = FALSE;
-  }
-
-  // Allow to hide sms code verify element to specific roles
-  if (_telephone_sms_verify_user_in_roles(array_keys(array_filter($settings['sms_code_verify_not_displayed_roles'])))) {
     $settings['display_sms_code_verify'] = FALSE;
   }
 
@@ -166,14 +172,6 @@ function telephone_sms_verify_field_widget_settings_form($field, $instance) {
     '#description' => t('The maximum times that the SMS code can be requested in the expiration time.'),
     '#default_value' => $settings['sms_code_max_request'],
     '#element_validate' => array('element_validate_integer_positive'),
-  );
-
-  $element['sms_code_verify_not_displayed_roles'] = array(
-    '#type' => 'checkboxes',
-    '#title' => t('SMS Code Verify Not Required Roles'),
-    '#options' => user_roles(),
-    '#description' => t('Use roles that do not require SMS code verification.'),
-    '#default_value' => $settings['sms_code_verify_not_displayed_roles'],
   );
 
   $element['sms_code_verify_not_displayed_forms'] = array(
@@ -348,25 +346,6 @@ function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
 }
 
 /**
- * Check to see if the user has one of the roles.
- *
- * @param $roles array
- * @return bool
- */
-function _telephone_sms_verify_user_in_roles($roles) {
-  global $user;
-
-  $intersect = array_intersect($roles, array_keys($user->roles));
-
-  if (empty($intersect)) {
-    return FALSE;
-  }
-  else {
-    return TRUE;
-  }
-}
-
-/**
  * Explode a multi lines string into an array
  *
  * @param $lines string
@@ -419,6 +398,8 @@ function _telephone_sms_verify_element_expand($element) {
   }
   $element['#settings'] += $element['#default_settings'];
   $settings = $element['#settings'];
+
+  $settings['display_sms_code_verify'] &= !user_access('bypass telephone sms verify');
 
   $id_prefix = implode('-', preg_replace('$_$', '-', $element['#array_parents']));
 
