@@ -422,7 +422,7 @@ function _telephone_sms_verify_element_expand($element, &$form_state, $complete_
     if ($settings['captcha'] && module_exists('captcha') && $_GET['q'] == 'system/ajax' &&
       (
         // We need captcha to be presented in the ajax form rebuild stage, but not when the captcha verify button is clicked, because next step is to submit the entire form, and we do not want to validate the capture element in this step.
-        $form_state['rebuild'] == TRUE && $form_state['triggering_element']['#name'] != 'phone-captcha-verify-op' ||
+        $form_state['rebuild'] == TRUE && $form_state['triggering_element']['#name'] != $id_prefix . '-captcha-verify-op' ||
         // We need captcha to be presented in the normal form build stage so that the captcha can be validated only when not in the form submit process
         $form_state['rebuild'] == FALSE && (!isset($form_state['triggering_element']) || $form_state['triggering_element']['#name'] != 'op')
       )
