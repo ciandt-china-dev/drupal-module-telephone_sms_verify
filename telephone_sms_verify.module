@@ -290,7 +290,7 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   return array('#type' => 'ajax', '#commands' => $commands);
 }
 
-function telephone_sms_verify_field_validate($element, &$form_state, $form) {
+function telephone_sms_verify_value_validate($element, &$form_state, $form) {
   $path = implode('/', array_slice($element['#array_parents'], 0, -1));
   $parent_element = _telephone_sms_verify_get_element_by_array_path($form, $path);
   $parent_element_state = _telephone_sms_verify_get_element_by_array_path($form_state['values'], $path);
@@ -424,7 +424,7 @@ function _telephone_sms_verify_element_expand($element) {
     '#prefix' => '<div id="' . $id_prefix . '-value-wrapper">',
     '#suffix' => '</div>',
     '#placeholder' => $settings['placeholder'],
-    '#element_validate' => array('telephone_sms_verify_field_validate'),
+    '#element_validate' => array('telephone_sms_verify_value_validate'),
   );
 
   if (isset($complete_form['#form_placeholder'])) {
