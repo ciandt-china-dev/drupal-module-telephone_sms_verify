@@ -207,7 +207,7 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   $id_prefix = implode('-', preg_replace('$_$', '-', $parent_element['#array_parents']));
 
   if ($settings['captcha'] && module_exists('captcha')) {
-    if ($form_state['triggering_element']['#name'] == $id_prefix . '-send-smscode-btn-op' || form_get_error($parent_element['smscode_captcha']['container']['captcha']['captcha_widgets']['captcha_response'])) {
+    if ($form_state['triggering_element']['#name'] == $id_prefix . '-send-smscode-btn-op' || isset($parent_element['smscode_captcha']['container']) && form_get_error($parent_element['smscode_captcha']['container']['captcha']['captcha_widgets']['captcha_response'])) {
       // Clear all messages errors
       $commands[] = ajax_command_remove('#messages');
       // Show error messages before the AJAX wrapper element
