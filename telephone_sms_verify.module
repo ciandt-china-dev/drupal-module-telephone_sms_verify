@@ -427,54 +427,36 @@ function _telephone_sms_verify_element_expand($element, &$form_state, $complete_
         $form_state['rebuild'] == FALSE && (!isset($form_state['triggering_element']) || $form_state['triggering_element']['#name'] != 'op')
       )
     ) {
+      $element['smscode_captcha']['#attached'] = array(
+        'js' => array(
+          drupal_get_path('module', 'telephone_sms_verify') . '/telephone_sms_verify.js',
+        ),
+        'css' => array(
+          drupal_get_path('module', 'telephone_sms_verify') . '/telephone_sms_verify.css',
+        ),
+      );
       $element['smscode_captcha']['overlay'] = array(
         '#type' => 'container',
         '#attributes' => array(
-          'style' => array('
-            width: 100%;
-            height: 100%;
-
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 1001;
-            opacity: 0.7;
-
-            background: #000 none repeat scroll 0 0;
-          '),
+          'class' => array(
+            'smscode-captcha-overlay',
+            $id_prefix . '-smscode-captcha-overlay',
+          ),
         ),
       );
 
       $element['smscode_captcha']['container'] = array(
         '#type' => 'container',
         '#attributes' => array(
-          'style' => array('
-            width: 40%;
-
-            position: fixed;
-            top: 15%;
-            left: 30%;
-            z-index: 1002;
-            overflow: hidden;
-
-            border-radius: 6px;
-            background-color: #fff;
-
-            padding: 10px 20px;
-          '),
+          'class' => array(
+            'smscode-captcha-container',
+            $id_prefix . '-smscode-captcha-container',
+          ),
         ),
       );
 
       $element['smscode_captcha']['container']['close'] = array(
         '#markup' => '<a class="boxclose" data-id="' . $id_prefix . '"></a>',
-        '#attached' => array(
-          'js' => array(
-            drupal_get_path('module', 'telephone_sms_verify') . '/telephone_sms_verify.js',
-          ),
-          'css' => array(
-            drupal_get_path('module', 'telephone_sms_verify') . '/telephone_sms_verify.css',
-          ),
-        ),
       );
 
       $element['smscode_captcha']['container']['captcha'] = array(
