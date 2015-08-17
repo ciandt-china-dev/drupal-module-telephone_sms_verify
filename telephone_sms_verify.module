@@ -204,10 +204,10 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
     if ($form_state['triggering_element']['#name'] == $id_prefix . '-send-smscode-btn-op' || isset($parent_element['smscode_captcha']['container']) && form_get_error($parent_element['smscode_captcha']['container']['captcha']['captcha_widgets']['captcha_response'])) {
       // Clear all messages errors
       $commands[] = ajax_command_remove('#messages');
-      // Show error messages before the AJAX wrapper element
-      $commands[] = ajax_command_before(NULL, theme('status_messages'));
       $commands[] = ajax_command_replace(NULL, drupal_render($parent_element['value']));
       $commands[] = ajax_command_replace('#' . $id_prefix . '-captcha-wrapper', drupal_render($parent_element['smscode_captcha']));
+      // Show error messages before the AJAX wrapper element
+      $commands[] = ajax_command_before('.' . $id_prefix . '-smscode-captcha-container .form-item-captcha-response', theme('status_messages'));
       return array('#type' => 'ajax', '#commands' => $commands);
     }
     else {
