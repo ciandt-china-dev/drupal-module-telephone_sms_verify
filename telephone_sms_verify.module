@@ -187,8 +187,8 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
 
   $commands = array();
 
-  if (empty($phone_number) || form_get_error($parent_element['value']) // if there are errors on phone number element
-  ) {
+  // if there are errors on phone number element
+  if (empty($phone_number) || form_get_error($parent_element['value'])) {
     // Clear all messages errors
     $commands[] = ajax_command_remove('#messages');
     // Show error messages before the AJAX wrapper element
