@@ -4,27 +4,39 @@
  */
 
 (function ($) {
-  function sms_count_down(seconds, element, callback) {
+  function smsCountDown(seconds, element, callback) {
     element.text(seconds + 's');
 
     if (seconds > 0) {
       seconds -= 1;
       setTimeout(function () {
-        sms_count_down(seconds, element, callback);
+        smsCountDown(seconds, element, callback);
       }, 1000);
     } else {
       callback();
     }
   }
 
-  $.fn.DrupalTelephoneSMSVerifyCountDown = function() {
-    var send_smscode_btn = $('#send-smscode-btn');
-    var send_smscode_count_down = $('#send-smscode-count-down');
-    send_smscode_btn.hide();
-    send_smscode_count_down.show();
-    sms_count_down(Drupal.settings.smscode_count_down, send_smscode_count_down, function() {
-      send_smscode_btn.show();
-      send_smscode_count_down.hide();
+  $.fn.DrupalTelephoneSMSVerifyCountDown = function(btn, count_down) {
+    var $smsCodeBtn = $(btn),
+      $countDownBtn = $(count_down);
+
+    $smsCodeBtn.hide();
+    $countDownBtn.show();
+
+    smsCountDown(Drupal.settings.smscode_count_down, $countDownBtn, function() {
+      $smsCodeBtn.show();
+      $countDownBtn.hide();
     });
+
   };
+  
+  Drupal.behaviors.telephone_sms_verify = {
+    attach: function() {
+      $('.boxclose').click(function () {
+        var id = '#' + $(this).data('id') + '-captcha-wrapper > *';
+        $(id).hide();
+      });
+    }
+  }
 })(jQuery);

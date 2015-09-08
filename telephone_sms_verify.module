@@ -7,6 +7,18 @@
 define('DEFAULT_VERIFICATION_MESSAGE_TEMPLATE', 'Your SMS verification code is [phone_sms_verify:verify_code]. This code will be expired in [phone_sms_verify:expire_time] minutes.');
 
 /**
+ * Implements hook_permission().
+ */
+function telephone_sms_verify_permission() {
+  return array(
+    'bypass telephone sms verify' =>  array(
+      'title' => t('Bypass telephone sms code verification'),
+      'restrict access' => TRUE,
+    ),
+  );
+}
+
+/**
  * Implements hook_field_widget_info().
  */
 function telephone_sms_verify_field_widget_info() {
@@ -14,15 +26,18 @@ function telephone_sms_verify_field_widget_info() {
     'telephone_sms_verify' => array(
       'label' => t('Telephone number with SMS verification'),
       'settings' => array(
-        'placeholder' => '',
-        'sms_template' => t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE),
-        'sms_code_expire' => 30,
-        'sms_code_length' => 6,
-        'sms_code_count_down' => 30,
-        'sms_code_max_request' => 3,
-        'sms_code_verify_not_required_roles' => array(),
-        'sms_code_verify_not_required_forms' => '',
-        'sms_code_verify_required_only_on_phone_changes_forms' => "user_profile_form",
+        'placeholder' => t('Phone Number'),
+        'captcha' => TRUE,
+        'captcha_type' => 'default',
+        'sms_template' => variable_get('telephone_sms_verify_sms_template', t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE)),
+        'sms_code_expire' => variable_get('telephone_sms_verify_sms_code_expire', 30),
+        'sms_code_length' => variable_get('telephone_sms_verify_sms_code_length', 6),
+        'sms_code_count_down' => variable_get('telephone_sms_verify_sms_code_count_down', 30),
+        'sms_code_max_request' => variable_get('telephone_sms_verify_sms_code_max_request', 3),
+        'display_sms_code_verify' => TRUE,
+        'require_sms_code_verify_on_change' => TRUE,
+        'sms_code_verify_not_displayed_forms' => '',
+        'sms_code_verify_required_on_phone_changes_forms' => "user_profile_form",
       ),
       'behaviors' => array(
         'multiple values' => FIELD_BEHAVIOR_DEFAULT,
@@ -37,65 +52,33 @@ function telephone_sms_verify_field_widget_info() {
  * Implements hook_field_widget_form().
  */
 function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  $form_id = $form_state['build_info']['form_id'];
+
   $widget = $instance['widget'];
   $settings = $widget['settings'];
 
+  // Do not show sms code verify element on field settings page
+  if (empty($element['#entity'])) {
+    $settings['display_sms_code_verify'] = FALSE;
+  }
+
+  // Allow to hide sms code verify element in specific forms
+  if (in_array($form_id, _telephone_sms_verify_explode_multi_lines($settings['sms_code_verify_not_displayed_forms']))) {
+    $settings['display_sms_code_verify'] = FALSE;
+  }
+
+  // Allow to mark sms code verify not required on specific forms
+  if (in_array($form_id, _telephone_sms_verify_explode_multi_lines($settings['sms_code_verify_required_on_phone_changes_forms']))) {
+    $settings['require_sms_code_verify_on_change'] = FALSE;
+  }
+
   $element += array(
-    '#type' => module_exists('elements') ? 'telfield' : 'textfield',
-    '#prefix' => '<div id="phone-number-' . $delta . '">',
-    '#suffix' => '</div>',
-    '#placeholder' => $settings['placeholder'],
+    '#type' => 'telephone_with_sms_verify',
+    '#settings' => $settings,
     '#default_value' => isset($items[$delta]['value']) ? $items[$delta]['value'] : '',
   );
 
-  $return['value'] = $element;
-
-  // Do not show sms code verification elements on field settings page
-  // Show sms code verification elements on account edit page or other pages that the user need to see
-  if (!empty($element['#entity']) &&
-    _telephone_sms_verify_show_smscode_to_roles($settings['sms_code_verify_not_required_roles']) &&
-    !in_array($form_state['build_info']['form_id'], _telephone_sms_verify_explode_multi_lines($settings['sms_code_verify_not_required_forms']))
-  ) {
-    $return['value']['#element_validate'][] = 'telephone_sms_verify_field_validate';
-    $return['smscode'] = array(
-      '#type' => 'textfield',
-      '#size' => 6,
-      '#title' => t('SMS Code'),
-      '#prefix' => '<div class="sms-verification-code">',
-      '#element_validate' => array('telephone_sms_verify_smscode_validate'),
-    );
-    $return['send_smscode'] = array(
-      '#type' => 'button',
-      '#ajax' => array(
-        'wrapper' => 'phone-number-' . $delta,
-        'callback' => 'telephone_sms_verify_ajax_callback',
-      ),
-      '#value' => t('Send SMS Code'),
-      '#prefix' => '<div id="send-smscode"><div id="send-smscode-btn">',
-      '#suffix' => '</div><div id="send-smscode-count-down"></div></div></div>',
-      '#attached' => array(
-        'js' => array(
-          drupal_get_path('module', 'telephone_sms_verify') . '/telephone_sms_verify.js',
-          array(
-            'data' => array('smscode_count_down' => $settings['sms_code_count_down']),
-            'type' => 'setting'
-          ),
-        ),
-      ),
-      '#limit_validation_errors' => array(
-        // Validate only the phone number field on AJAX call
-        array($field['field_name'], LANGUAGE_NONE, $delta, 'value'),
-      ),
-      '#submit' => array(),
-    );
-
-    // SMS verification is not required on the account edit page
-    if (!in_array($form_state['build_info']['form_id'], _telephone_sms_verify_explode_multi_lines($settings['sms_code_verify_required_only_on_phone_changes_forms']))) {
-      $return['smscode']['#required'] = TRUE;
-    }
-  }
-
-  return $return;
+  return $element;
 }
 
 /**
@@ -174,63 +157,71 @@ function telephone_sms_verify_field_widget_settings_form($field, $instance) {
     '#element_validate' => array('element_validate_integer_positive'),
   );
 
-  $element['sms_code_verify_not_required_roles'] = array(
-    '#type' => 'checkboxes',
-    '#title' => t('SMS Code Verify Not Required Roles'),
-    '#options' => user_roles(),
-    '#description' => t('Use roles that do not require SMS code verification.'),
-    '#default_value' => $settings['sms_code_verify_not_required_roles'],
-  );
-
-  $element['sms_code_verify_not_required_forms'] = array(
+  $element['sms_code_verify_not_displayed_forms'] = array(
     '#type' => 'textarea',
     '#title' => t('SMS Code Verify Not Required Forms'),
     '#description' => t('Form IDs that do not require SMS code verification. Fill with a drupal form id in each line.'),
-    '#default_value' => $settings['sms_code_verify_not_required_forms'],
+    '#default_value' => $settings['sms_code_verify_not_displayed_forms'],
   );
 
-  $element['sms_code_verify_required_only_on_phone_changes_forms'] = array(
+  $element['sms_code_verify_required_on_phone_changes_forms'] = array(
     '#type' => 'textarea',
     '#title' => t('SMS Code Verify Required Only if Phone Changes Forms'),
     '#description' => t('Form IDs that only requires SMS code verification if the phone number has changed. Fill with a drupal form id in each line.'),
-    '#default_value' => $settings['sms_code_verify_required_only_on_phone_changes_forms'],
+    '#default_value' => $settings['sms_code_verify_required_on_phone_changes_forms'],
   );
 
   return $element;
 }
 
 function telephone_sms_verify_ajax_callback($form, $form_state) {
-  $field = $form_state['triggering_element']['#array_parents'][0];
-  $delta = $form_state['triggering_element']['#array_parents'][2];
-
-  $phone_number = _telephone_sms_verify_format_default_value($form_state['values'][$field][LANGUAGE_NONE][$delta]['value']);
-  $phone_number_default = _telephone_sms_verify_format_default_value($form[$field][LANGUAGE_NONE][$delta]['value']['#default_value']);
-
-  // Do not send sms verification code on account editing page and the phone number is not changed
-  if ($form['#user_category'] == 'account' && $phone_number == $phone_number_default) {
-    return $form[$field][LANGUAGE_NONE][$delta]['value'];
+  if (preg_match('/captcha-verify-op$/', $form_state['triggering_element']['#name'])) {
+    $path = implode('/', array_slice($form_state['triggering_element']['#array_parents'], 0, -3));
+  } else {
+    $path = implode('/', array_slice($form_state['triggering_element']['#array_parents'], 0, -1));
   }
+  $parent_element = _telephone_sms_verify_get_element_by_array_path($form, $path);
+
+  $settings = $parent_element['#settings'];
+  $phone_number = _telephone_sms_verify_format_default_value($parent_element['#value']);
 
   $commands = array();
 
-  if (empty($phone_number) || form_get_error($form[$field][LANGUAGE_NONE][$delta]['value']) // if there are errors on phone number element
-  ) {
+  // if there are errors on phone number element
+  if (empty($phone_number) || form_get_error($parent_element['value'])) {
     // Clear all messages errors
     $commands[] = ajax_command_remove('#messages');
     // Show error messages before the AJAX wrapper element
     $commands[] = ajax_command_before(NULL, theme('status_messages'));
     // Update the AJAX wrapper element
-    $commands[] = ajax_command_replace(NULL, drupal_render($form[$field][LANGUAGE_NONE][$delta]['value']));
+    $commands[] = ajax_command_replace(NULL, drupal_render($parent_element['value']));
     return array('#type' => 'ajax', '#commands' => $commands);
+  }
+
+  $id_prefix = implode('-', preg_replace('$_$', '-', $parent_element['#array_parents']));
+
+  if ($settings['captcha'] && module_exists('captcha')) {
+    if ($form_state['triggering_element']['#name'] == $id_prefix . '-send-smscode-btn-op' || isset($parent_element['smscode_captcha']['container']) && form_get_error($parent_element['smscode_captcha']['container']['captcha']['captcha_widgets']['captcha_response'])) {
+      // Clear all messages errors
+      $commands[] = ajax_command_remove('#messages');
+      $commands[] = ajax_command_replace(NULL, drupal_render($parent_element['value']));
+      $commands[] = ajax_command_replace('#' . $id_prefix . '-captcha-wrapper', drupal_render($parent_element['smscode_captcha']));
+      // Show error messages before the AJAX wrapper element
+      $commands[] = ajax_command_after('.' . $id_prefix . '-smscode-captcha-container .form-item-captcha-response', theme('status_messages'));
+      return array('#type' => 'ajax', '#commands' => $commands);
+    }
+    else {
+      $commands[] = ajax_command_replace('#' . $id_prefix . '-captcha-wrapper', '<div id="' . $id_prefix . '-captcha-wrapper"></div>');
+    }
   }
 
   //Compute session key
   $form_id = $form_state['values']['form_id'];
   $session_key = md5($form_id . $phone_number);
 
-  $expire = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings']['sms_code_expire'];
-  $length = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings']['sms_code_length'];
-  $max_request = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings']['sms_code_max_request'];
+  $expire = $settings['sms_code_expire'];
+  $length = $settings['sms_code_length'];
+  $max_request = $settings['sms_code_max_request'];
 
   // Generate SMS verification code if not set or has expired
   if (!isset($_SESSION[$session_key]) || $_SESSION[$session_key]['time'] + 60 * $expire < time()) {
@@ -243,14 +234,19 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   }
 
   // Get SMS verification template from field widget settings
-  $template = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings']['sms_template'];
+  $template = $settings['sms_template'];
 
   // Set default value is no template is configured
   if (empty($template)) {
     $template = t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE);
   }
 
-  $template = token_replace($template, array('phone_sms_verify' => array('verify_code' => $_SESSION[$session_key]['code'], 'expire_time' => $expire)));
+  $template = token_replace($template, array(
+    'phone_sms_verify' => array(
+      'verify_code' => $_SESSION[$session_key]['code'],
+      'expire_time' => $expire
+    )
+  ));
 
   // Send SMS verification code using SMS Framework
   sms_send($phone_number, $template);
@@ -258,25 +254,41 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   // Clear all messages errors
   $commands[] = ajax_command_remove('#messages');
   // Update the AJAX wrapper element
-  $commands[] = ajax_command_replace(NULL, drupal_render($form[$field][LANGUAGE_NONE][$delta]['value']));
+  $commands[] = ajax_command_replace(NULL, drupal_render($parent_element['value']));
   // Trigger javascript messages send countdown
-  $commands[] = ajax_command_invoke(NULL, 'DrupalTelephoneSMSVerifyCountDown');
+  $commands[] = ajax_command_invoke(NULL, 'DrupalTelephoneSMSVerifyCountDown', array(
+    '#' . $id_prefix . '-send-smscode-btn',
+    '#' . $id_prefix . '-send-smscode-count-down'
+  ));
 
   return array('#type' => 'ajax', '#commands' => $commands);
 }
 
-function telephone_sms_verify_field_validate($element, &$form_state, $form) {
-  $field = $element['#array_parents'][0];
-  $delta = $element['#array_parents'][2];
+function telephone_sms_verify_validate($element, &$form_state, $form) {
+  form_set_value($element, $element['#value'], $form_state);
+}
 
-  $expire = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings']['sms_code_expire'];
-  $phone_number = _telephone_sms_verify_format_default_value($form_state['values'][$field][LANGUAGE_NONE][$delta]['value']);
+function telephone_sms_verify_value_validate($element, &$form_state, $form) {
+  $path = implode('/', array_slice($element['#array_parents'], 0, -1));
+  $parent_element = _telephone_sms_verify_get_element_by_array_path($form, $path);
+  $parent_element_state = _telephone_sms_verify_get_element_by_array_path($form_state['values'], $path);
+
+  $settings = $parent_element['#settings'];
+  $phone_number = _telephone_sms_verify_format_default_value($parent_element_state['value']);
+  $phone_number_default = _telephone_sms_verify_format_default_value($parent_element['#default_value']);
+
+  $expire = $settings['sms_code_expire'];
 
   //Compute session key
   $form_id = $form_state['values']['form_id'];
   $session_key = md5($form_id . $phone_number);
 
-  $max_request = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings']['sms_code_max_request'];
+  $max_request = $settings['sms_code_max_request'];
+
+  // Do not send sms verification code on account editing page and the phone number is not changed
+  if ($settings['require_sms_code_verify_on_change'] && $phone_number == $phone_number_default) {
+    form_error($element, t('Your phone number has not changed, no SMS verification code is sent.'));
+  }
 
   if (isset($_SESSION[$session_key]) && $_SESSION[$session_key]['time'] + 60 * $expire >= time() && $_SESSION[$session_key]['count'] >= $max_request) {
     $minutes_left = ceil((($_SESSION[$session_key]['time'] + 60 * $expire) - time()) / 60);
@@ -285,11 +297,15 @@ function telephone_sms_verify_field_validate($element, &$form_state, $form) {
 }
 
 function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
-  $field = $element['#array_parents'][0];
-  $delta = $element['#array_parents'][2];
+  $path = implode('/', array_slice($element['#array_parents'], 0, -1));
 
-  $phone_number = _telephone_sms_verify_format_default_value($form_state['values'][$field][LANGUAGE_NONE][$delta]['value']);
-  $phone_number_default = _telephone_sms_verify_format_default_value($form[$field][LANGUAGE_NONE][$delta]['value']['#default_value']);
+  $parent_element = _telephone_sms_verify_get_element_by_array_path($form, $path);
+  $parent_element_state = _telephone_sms_verify_get_element_by_array_path($form_state['values'], $path);
+
+  $settings = $parent_element['#settings'];
+  $phone_number = _telephone_sms_verify_format_default_value($parent_element_state['value']);
+
+  $phone_number_default = isset($parent_element['value']['#default_value']) ? $parent_element['value']['#default_value'] : '';
 
   // Only validates this field if the telephone number is newly added or changed
   if ($phone_number != $phone_number_default) {
@@ -301,7 +317,7 @@ function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
     $form_id = $form_state['values']['form_id'];
     $session_key = md5($form_id . $phone_number);
 
-    $expire = $form_state['field'][$field][LANGUAGE_NONE]['instance']['widget']['settings']['sms_code_expire'];
+    $expire = $settings['sms_code_expire'];
 
     if (!isset($_SESSION[$session_key]) || $element['#value'] != $_SESSION[$session_key]['code']) {
       form_error($element, t('Your SMS verification code is not right'));
@@ -309,28 +325,6 @@ function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
     elseif ($_SESSION[$session_key]['time'] + 60 * $expire < time()) {
       form_error($element, t('This SMS code has expired.'));
     }
-  }
-}
-
-/**
- * Check to see if the user has one of the roles.
- *
- * @param $roles array
- * @return bool
- */
-function _telephone_sms_verify_user_in_roles($roles) {
-  global $user;
-
-  if ($user->uid == 1) {
-    return TRUE;
-  }
-
-  $intersect = array_intersect($roles, array_keys($user->roles));
-
-  if (empty($intersect)) {
-    return FALSE;
-  } else {
-    return TRUE;
   }
 }
 
@@ -344,16 +338,233 @@ function _telephone_sms_verify_explode_multi_lines($lines) {
   return explode("\n", str_replace("\r", "", $lines));
 }
 
-/**
- * Check if the use can see the sms verification code element.
- *
- * @param $roles array
- * @return bool
- */
-function _telephone_sms_verify_show_smscode_to_roles($roles) {
-  return !_telephone_sms_verify_user_in_roles(array_keys(array_filter($roles)));
-}
-
 function _telephone_sms_verify_format_default_value($current, $default = '') {
   return isset($current) ? $current : $default;
+}
+
+/**
+ * Implements hook_element_info().
+ */
+function telephone_sms_verify_element_info() {
+  $type['telephone_with_sms_verify'] = array(
+    '#tree' => TRUE,
+    '#input' => TRUE,
+    '#required' => FALSE,
+    '#process' => array('_telephone_sms_verify_element_expand', 'form_process_container'),
+    '#description' => t('Telephone number'),
+    '#default_value' => '',
+    '#theme_wrappers' => array('container'),
+    '#default_settings' => array(
+      'placeholder' => t('Phone Number'),
+      'captcha' => TRUE,
+      'captcha_type' => 'default',
+      'sms_template' => variable_get('telephone_sms_verify_sms_template', t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE)),
+      'sms_code_expire' => variable_get('telephone_sms_verify_sms_code_expire', 30),
+      'sms_code_length' => variable_get('telephone_sms_verify_sms_code_length', 6),
+      'sms_code_count_down' => variable_get('telephone_sms_verify_sms_code_count_down', 30),
+      'sms_code_max_request' => variable_get('telephone_sms_verify_sms_code_max_request', 3),
+      'display_sms_code_verify' => TRUE,
+      'require_sms_code_verify_on_change' => TRUE,
+    ),
+    '#value_callback' => '_telephone_sms_verify_element_value',
+    '#element_validate' => array('telephone_sms_verify_validate'),
+  );
+  return $type;
+}
+
+function _telephone_sms_verify_element_value($element, $input, $form_state) {
+  return $input['value'];
+}
+
+function _telephone_sms_verify_element_expand($element, &$form_state, $complete_form) {
+  if (!isset($element['#settings'])) {
+    $element['#settings'] = array();
+  }
+  $element['#settings'] += $element['#default_settings'];
+  $settings = $element['#settings'];
+
+  $settings['display_sms_code_verify'] &= !user_access('bypass telephone sms verify');
+
+  // Give user a chance finally alter the sms code verify element behavior
+  $context = array(
+    'element' => $element,
+    'form' => $complete_form,
+    'form_state' => $form_state,
+  );
+  drupal_alter('sms_code_verify_element_settings', $settings, $context);
+
+  $id_prefix = implode('-', preg_replace('$_$', '-', $element['#array_parents']));
+
+  $element['value'] = array(
+    '#type' => module_exists('elements') ? 'telfield' : 'textfield',
+    '#title' => $element['#title'],
+    '#required' => $element['#required'],
+    '#maxlength' => isset($element['#maxlength']) ? $element['#maxlength'] : 11,
+    '#description' => $element['#description'],
+    '#default_value' => $element['#default_value'],
+    '#weight' => 0,
+    '#prefix' => '<div id="' . $id_prefix . '-value-wrapper">',
+    '#suffix' => '</div>',
+    '#placeholder' => $settings['placeholder'],
+    '#element_validate' => array('telephone_sms_verify_value_validate'),
+  );
+
+  if (isset($complete_form['#form_placeholder'])) {
+    $element['value']['#form_placeholder'] = $complete_form['#form_placeholder'];
+  }
+
+  if ($settings['display_sms_code_verify']) {
+    $element['smscode_captcha'] = array(
+      '#type' => 'container',
+      '#prefix' => '<div id="' . $id_prefix . '-captcha-wrapper">',
+      '#suffix' => '</div>',
+    );
+    if ($settings['captcha'] && module_exists('captcha') && $_GET['q'] == 'system/ajax' &&
+      (
+        // We need captcha to be presented in the ajax form rebuild stage, but not when the captcha verify button is clicked, because next step is to submit the entire form, and we do not want to validate the capture element in this step.
+        $form_state['rebuild'] == TRUE && $form_state['triggering_element']['#name'] != $id_prefix . '-captcha-verify-op' ||
+        // We need captcha to be presented in the normal form build stage so that the captcha can be validated only when not in the form submit process
+        $form_state['rebuild'] == FALSE && (!isset($form_state['triggering_element']) || $form_state['triggering_element']['#name'] != 'op')
+      )
+    ) {
+      $element['smscode_captcha']['#attached'] = array(
+        'js' => array(
+          drupal_get_path('module', 'telephone_sms_verify') . '/telephone_sms_verify.js',
+        ),
+        'css' => array(
+          drupal_get_path('module', 'telephone_sms_verify') . '/telephone_sms_verify.css',
+        ),
+      );
+      $element['smscode_captcha']['overlay'] = array(
+        '#type' => 'container',
+        '#attributes' => array(
+          'class' => array(
+            'smscode-captcha-overlay',
+            $id_prefix . '-smscode-captcha-overlay',
+          ),
+        ),
+      );
+
+      $element['smscode_captcha']['container'] = array(
+        '#type' => 'container',
+        '#attributes' => array(
+          'class' => array(
+            'smscode-captcha-container',
+            $id_prefix . '-smscode-captcha-container',
+          ),
+        ),
+      );
+
+      $element['smscode_captcha']['container']['close'] = array(
+        '#markup' => '<a class="boxclose" data-id="' . $id_prefix . '"></a>',
+      );
+
+      $element['smscode_captcha']['container']['captcha'] = array(
+        '#type' => 'captcha',
+        '#captcha_type' => $settings['captcha_type'],
+      );
+
+      if (module_exists('image_captcha_refresh')) {
+        $element['smscode_captcha']['container']['captcha']['#after_build'][] = '_telephone_sms_verify_image_captcha_refresh_after_build_process';
+        $element['smscode_captcha']['container']['captcha']['#attached']['js'][] = drupal_get_path('module', 'image_captcha_refresh') . '/image_captcha_refresh.js';
+      }
+
+      $element['smscode_captcha']['container']['verify'] = array(
+        '#name' => $id_prefix . '-captcha-verify-op',
+        '#type' => 'button',
+        '#ajax' => array(
+          'wrapper' => $id_prefix . '-value-wrapper',
+          'callback' => 'telephone_sms_verify_ajax_callback',
+        ),
+        '#value' => t('Verify'),
+        '#limit_validation_errors' => array(
+          array('captcha_response'),
+          array_merge($element['#array_parents'], array('value')),
+          array_merge($element['#array_parents'], array(
+            'smscode_captcha',
+            'container',
+            'captcha'
+          )),
+        ),
+      );
+    }
+
+    $element['smscode'] = array(
+      '#type' => 'textfield',
+      '#size' => 6,
+      '#title' => t('SMS Code'),
+      '#weight' => 1,
+      '#prefix' => '<div id="' . $id_prefix . '-sms-verification-code-wrapper" class="sms-verification-code">',
+      '#element_validate' => array('telephone_sms_verify_smscode_validate'),
+      '#required' => $settings['require_sms_code_verify_on_change'],
+    );
+
+    $element['send_smscode'] = array(
+      '#name' => $id_prefix . '-send-smscode-btn-op',
+      '#type' => 'button',
+      '#ajax' => array(
+        'wrapper' => $id_prefix . '-value-wrapper',
+        'callback' => 'telephone_sms_verify_ajax_callback',
+      ),
+      '#value' => t('Send SMS Code'),
+      '#weight' => 2,
+      '#prefix' => '<div id="' . $id_prefix . '-send-smscode-btn-wrapper"><div id="' . $id_prefix . '-send-smscode-btn">',
+      '#suffix' => '</div><div id="' . $id_prefix . '-send-smscode-count-down"></div></div></div>',
+      '#attached' => array(
+        'js' => array(
+          drupal_get_path('module', 'telephone_sms_verify') . '/telephone_sms_verify.js',
+          array(
+            'data' => array('smscode_count_down' => $settings['sms_code_count_down']),
+            'type' => 'setting'
+          ),
+        ),
+      ),
+      '#limit_validation_errors' => array(
+        // Validate only the phone number field on AJAX call
+        array_merge($element['#array_parents'], array('value')),
+      ),
+      '#submit' => array(),
+    );
+  }
+
+  return $element;
+}
+
+function _telephone_sms_verify_get_element_by_array_path($arr, $path) {
+  if (!$path) {
+    return NULL;
+  }
+
+  $segments = is_array($path) ? $path : explode('/', $path);
+
+  $cur =& $arr;
+
+  foreach ($segments as $segment) {
+    if (!isset($cur[$segment])) {
+      return NULL;
+    }
+
+    $cur = $cur[$segment];
+  }
+
+  return $cur;
+}
+
+/**
+ * Add image refresh button to captcha form element
+ *
+ * @return
+ *   The processed element.
+ *
+ * @see captcha_element_info()
+ * @see image_captcha_refresh_element_info_alter()
+ */
+function _telephone_sms_verify_image_captcha_refresh_after_build_process($element, $form_state) {
+  $form_id = $element['#captcha_info']['form_id'];
+  if (isset($element['captcha_widgets']['captcha_image'])) {
+    $element['captcha_widgets']['captcha_refresh'] = array(
+      '#markup' => theme('image_captcha_refresh_link', array('url' => 'captcha/refresh/' . $form_id)),
+    );
+  }
+  return $element;
 }
