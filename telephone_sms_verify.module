@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Add SMS verification to telephone number field.
@@ -11,7 +12,7 @@ define('DEFAULT_VERIFICATION_MESSAGE_TEMPLATE', 'Your SMS verification code is [
  */
 function telephone_sms_verify_permission() {
   return array(
-    'bypass telephone sms verify' =>  array(
+    'bypass telephone sms verify' => array(
       'title' => t('Bypass telephone sms code verification'),
       'restrict access' => TRUE,
     ),
@@ -86,7 +87,7 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
  * Implements hook_field_widget_error().
  */
 function telephone_sms_verify_field_widget_error($element, $error, $form, &$form_state) {
-  form_error($element, $error ['message']);
+  form_error($element, $error['message']);
 }
 
 /**
@@ -178,7 +179,8 @@ function telephone_sms_verify_field_widget_settings_form($field, $instance) {
 function telephone_sms_verify_ajax_callback($form, $form_state) {
   if (preg_match('/captcha-verify-op$/', $form_state['triggering_element']['#name'])) {
     $path = implode('/', array_slice($form_state['triggering_element']['#array_parents'], 0, -3));
-  } else {
+  }
+  else {
     $path = implode('/', array_slice($form_state['triggering_element']['#array_parents'], 0, -1));
   }
   $parent_element = _telephone_sms_verify_get_element_by_array_path($form, $path);
@@ -248,8 +250,8 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   $template = token_replace($template, array(
     'phone_sms_verify' => array(
       'verify_code' => $_SESSION[$session_key]['code'],
-      'expire_time' => $expire
-    )
+      'expire_time' => $expire,
+    ),
   ));
 
   // Send SMS verification code using SMS Framework
@@ -262,7 +264,7 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   // Trigger javascript messages send countdown
   $commands[] = ajax_command_invoke(NULL, 'DrupalTelephoneSMSVerifyCountDown', array(
     '#' . $id_prefix . '-send-smscode-btn',
-    '#' . $id_prefix . '-send-smscode-count-down'
+    '#' . $id_prefix . '-send-smscode-count-down',
   ));
 
   return array('#type' => 'ajax', '#commands' => $commands);
@@ -341,6 +343,7 @@ function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
  * Explode a multi lines string into an array
  *
  * @param $lines string
+ *
  * @return array
  */
 function _telephone_sms_verify_explode_multi_lines($lines) {
@@ -498,7 +501,7 @@ function _telephone_sms_verify_element_expand($element, &$form_state, $complete_
           array_merge($element['#array_parents'], array(
             'smscode_captcha',
             'container',
-            'captcha'
+            'captcha',
           )),
         ),
       );
@@ -530,7 +533,7 @@ function _telephone_sms_verify_element_expand($element, &$form_state, $complete_
           drupal_get_path('module', 'telephone_sms_verify') . '/telephone_sms_verify.js',
           array(
             'data' => array('smscode_count_down' => $settings['sms_code_count_down']),
-            'type' => 'setting'
+            'type' => 'setting',
           ),
         ),
       ),
@@ -552,7 +555,7 @@ function _telephone_sms_verify_get_element_by_array_path($arr, $path) {
 
   $segments = is_array($path) ? $path : explode('/', $path);
 
-  $cur =& $arr;
+  $cur = &$arr;
 
   foreach ($segments as $segment) {
     if (!isset($cur[$segment])) {

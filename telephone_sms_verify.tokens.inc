@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Token callbacks for the telephone_sms_verify module.
@@ -38,6 +39,7 @@ function telephone_sms_verify_tokens($type, $tokens, array $data = array(), arra
         case 'verify_code':
           $replacements[$original] = $data['phone_sms_verify']['verify_code'];
           break;
+
         case 'expire_time':
           $replacements[$original] = $data['phone_sms_verify']['expire_time'];
           break;

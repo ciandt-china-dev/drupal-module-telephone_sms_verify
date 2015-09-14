@@ -30,7 +30,7 @@
     });
 
   };
-  
+
   Drupal.behaviors.telephone_sms_verify = {
     attach: function() {
       $('.boxclose').click(function () {
