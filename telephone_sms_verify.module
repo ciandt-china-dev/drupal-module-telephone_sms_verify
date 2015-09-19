@@ -26,6 +26,7 @@ function telephone_sms_verify_field_widget_info() {
     'telephone_sms_verify' => array(
       'label' => t('Telephone number with SMS verification'),
       'settings' => array(
+        'widget' => TRUE,
         'placeholder' => t('Phone Number'),
         'captcha' => TRUE,
         'captcha_type' => 'default',
@@ -355,6 +356,7 @@ function telephone_sms_verify_element_info() {
     '#default_value' => '',
     '#theme_wrappers' => array('container'),
     '#default_settings' => array(
+      'widget' => FALSE,
       'placeholder' => t('Phone Number'),
       'captcha' => TRUE,
       'captcha_type' => 'default',
@@ -373,7 +375,12 @@ function telephone_sms_verify_element_info() {
 }
 
 function _telephone_sms_verify_element_value($element, $input, $form_state) {
-  return $input['value'];
+  if ($element['#settings']['widget']) {
+    return $input;
+  }
+  else {
+    return $input['value'];
+  }
 }
 
 function _telephone_sms_verify_element_expand($element, &$form_state, $complete_form) {
