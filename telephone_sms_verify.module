@@ -185,6 +185,9 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
 
   $settings = $parent_element['#settings'];
   $phone_number = _telephone_sms_verify_format_default_value($parent_element['#value']);
+  if ($settings['widget']) {
+    $phone_number = $phone_number['value'];
+  }
 
   $commands = array();
 
@@ -276,6 +279,9 @@ function telephone_sms_verify_value_validate($element, &$form_state, $form) {
 
   $settings = $parent_element['#settings'];
   $phone_number = _telephone_sms_verify_format_default_value($parent_element_state['value']);
+  if ($settings['widget']) {
+    $phone_number = $phone_number['value'];
+  }
   $phone_number_default = _telephone_sms_verify_format_default_value($parent_element['#default_value']);
 
   $expire = $settings['sms_code_expire'];
@@ -305,7 +311,9 @@ function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
 
   $settings = $parent_element['#settings'];
   $phone_number = _telephone_sms_verify_format_default_value($parent_element_state['value']);
-
+  if ($settings['widget']) {
+    $phone_number = $phone_number['value'];
+  }
   $phone_number_default = isset($parent_element['value']['#default_value']) ? $parent_element['value']['#default_value'] : '';
 
   // Only validates this field if the telephone number is newly added or changed
