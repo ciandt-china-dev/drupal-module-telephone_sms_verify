@@ -8,16 +8,21 @@ a.boxclose {
     font-size: 18px;
     font-weight: bold;
     line-height: 0;
-    padding: 10px 3px 12px;
+    padding: 6px;
 }
 
 a.boxclose:hover {
-    background: #605f61 none repeat scroll 0 0;
+    background: #ccc none repeat scroll 0 0;
     color: #fff;
 }
 
 .boxclose:before {
-    content: "×";
+    content: '';
+    display: block;
+    width: 16px;
+    height: 16px;
+    background: url("close.png") no-repeat center center;
+    background-size: 16px;
 }
 
 .smscode-captcha-overlay {
