@@ -176,6 +176,14 @@ function telephone_sms_verify_field_widget_settings_form($field, $instance) {
   return $element;
 }
 
+/**
+ * AJAX callback for the form AJAX operation
+ *
+ * @param $form
+ * @param $form_state
+ * @return array
+ * @throws \Exception
+ */
 function telephone_sms_verify_ajax_callback($form, $form_state) {
   if (preg_match('/captcha-verify-op$/', $form_state['triggering_element']['#name'])) {
     $path = implode('/', array_slice($form_state['triggering_element']['#array_parents'], 0, -3));
@@ -270,10 +278,27 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   return array('#type' => 'ajax', '#commands' => $commands);
 }
 
+/**
+ * Validation callback to verify 'telephone_with_sms_verify' form element
+ *
+ * We use this callback to set the value fo this element from the sub 'value'
+ * element.
+ *
+ * @param $element
+ * @param $form_state
+ * @param $form
+ */
 function telephone_sms_verify_validate($element, &$form_state, $form) {
   form_set_value($element, $element['#value'], $form_state);
 }
 
+/**
+ * Validation callback to verify the telephone number
+ *
+ * @param $element
+ * @param $form_state
+ * @param $form
+ */
 function telephone_sms_verify_value_validate($element, &$form_state, $form) {
   $path = implode('/', array_slice($element['#array_parents'], 0, -1));
   $parent_element = _telephone_sms_verify_get_element_by_array_path($form, $path);
@@ -305,6 +330,13 @@ function telephone_sms_verify_value_validate($element, &$form_state, $form) {
   }
 }
 
+/**
+ * Validation callback to verify the sms code
+ *
+ * @param $element
+ * @param $form_state
+ * @param $form
+ */
 function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
   $path = implode('/', array_slice($element['#array_parents'], 0, -1));
 
@@ -350,6 +382,13 @@ function _telephone_sms_verify_explode_multi_lines($lines) {
   return explode("\n", str_replace("\r", "", $lines));
 }
 
+/**
+ * Helper function to set a default value
+ *
+ * @param mixed $current
+ * @param mixed $default
+ * @return mixed
+ */
 function _telephone_sms_verify_format_default_value($current, $default = '') {
   return isset($current) ? $current : $default;
 }
@@ -385,6 +424,14 @@ function telephone_sms_verify_element_info() {
   return $type;
 }
 
+/**
+ * Value callback for 'telephone_with_sms_verify' form element
+ *
+ * @param $element
+ * @param $input
+ * @param $form_state
+ * @return mixed
+ */
 function _telephone_sms_verify_element_value($element, $input, $form_state) {
   if ($element['#settings']['widget']) {
     return $input;
@@ -394,6 +441,14 @@ function _telephone_sms_verify_element_value($element, $input, $form_state) {
   }
 }
 
+/**
+ * Helper function to expand the 'telephone_with_sms_verify' form element
+ *
+ * @param $element
+ * @param $form_state
+ * @param $complete_form
+ * @return mixed
+ */
 function _telephone_sms_verify_element_expand($element, &$form_state, $complete_form) {
   if (!isset($element['#settings'])) {
     $element['#settings'] = array();
@@ -549,6 +604,13 @@ function _telephone_sms_verify_element_expand($element, &$form_state, $complete_
   return $element;
 }
 
+/**
+ * Helper function to get a sub-element by its key path
+ *
+ * @param $arr
+ * @param $path
+ * @return null
+ */
 function _telephone_sms_verify_get_element_by_array_path($arr, $path) {
   if (!$path) {
     return NULL;
