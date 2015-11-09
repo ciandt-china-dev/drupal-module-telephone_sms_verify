@@ -235,7 +235,6 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
 
   $expire = $settings['sms_code_expire'];
   $length = $settings['sms_code_length'];
-  $max_request_before_expire = $settings['sms_code_max_request_before_expire'];
 
   // Generate SMS verification code if not set or has expired
   if (!isset($_SESSION[$session_key]) || $_SESSION[$session_key]['time'] + 60 * $expire < time()) {
@@ -243,7 +242,7 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
     $_SESSION[$session_key]['time'] = time();
     $_SESSION[$session_key]['count'] = 0;
   }
-  elseif ($_SESSION[$session_key]['count'] < $max_request_before_expire) {
+  else {
     $_SESSION[$session_key]['count'] += 1;
   }
 
