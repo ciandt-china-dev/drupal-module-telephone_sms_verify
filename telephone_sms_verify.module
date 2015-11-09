@@ -311,6 +311,10 @@ function telephone_sms_verify_value_validate($element, &$form_state, $form) {
   }
   $phone_number_default = _telephone_sms_verify_format_default_value($parent_element['#default_value']);
 
+  if (!$settings['display_sms_code_verify']) {
+    return;
+  }
+
   $expire = $settings['sms_code_expire'];
 
   //Compute session key
@@ -320,11 +324,11 @@ function telephone_sms_verify_value_validate($element, &$form_state, $form) {
   $max_request_before_expire = $settings['sms_code_max_request_before_expire'];
 
   // Do not send sms verification code on account editing page and the phone number is not changed
-  if ($settings['display_sms_code_verify'] && $settings['require_sms_code_verify_on_change'] && $phone_number == $phone_number_default) {
+  if ($settings['require_sms_code_verify_on_change'] && $phone_number == $phone_number_default) {
     form_error($element, t('Your phone number has not changed, no SMS verification code is sent.'));
   }
 
-  if ($settings['display_sms_code_verify'] && isset($_SESSION[$session_key]) && $_SESSION[$session_key]['time'] + 60 * $expire >= time() && $_SESSION[$session_key]['count'] >= $max_request_before_expire) {
+  if (isset($_SESSION[$session_key]) && $_SESSION[$session_key]['time'] + 60 * $expire >= time() && $_SESSION[$session_key]['count'] >= $max_request_before_expire) {
     $minutes_left = ceil((($_SESSION[$session_key]['time'] + 60 * $expire) - time()) / 60);
     form_error($element, t('You have reached the maximum request limitation, please try again after @expire minutes', array('@expire' => $minutes_left)));
   }
