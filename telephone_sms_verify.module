@@ -31,7 +31,7 @@ function telephone_sms_verify_field_widget_info() {
         'placeholder' => t('Phone Number'),
         'captcha' => TRUE,
         'captcha_type' => 'default',
-        'sms_template' => variable_get('telephone_sms_verify_sms_template', t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE)),
+        'sms_template' => variable_get('telephone_sms_verify_sms_template', DEFAULT_VERIFICATION_MESSAGE_TEMPLATE),
         'sms_code_expire' => variable_get('telephone_sms_verify_sms_code_expire', 30),
         'sms_code_length' => variable_get('telephone_sms_verify_sms_code_length', 6),
         'sms_code_count_down' => variable_get('telephone_sms_verify_sms_code_count_down', 30),
@@ -248,7 +248,7 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   }
 
   // Get SMS verification template from field widget settings
-  $template = $settings['sms_template'];
+  $template = t($settings['sms_template']);
 
   // Set default value is no template is configured
   if (empty($template)) {
@@ -413,7 +413,7 @@ function telephone_sms_verify_element_info() {
       'placeholder' => t('Phone Number'),
       'captcha' => TRUE,
       'captcha_type' => 'default',
-      'sms_template' => variable_get('telephone_sms_verify_sms_template', t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE)),
+      'sms_template' => variable_get('telephone_sms_verify_sms_template', DEFAULT_VERIFICATION_MESSAGE_TEMPLATE),
       'sms_code_expire' => variable_get('telephone_sms_verify_sms_code_expire', 30),
       'sms_code_length' => variable_get('telephone_sms_verify_sms_code_length', 6),
       'sms_code_count_down' => variable_get('telephone_sms_verify_sms_code_count_down', 30),
