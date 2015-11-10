@@ -404,6 +404,13 @@ function telephone_sms_verify_value_validate($element, &$form_state, $form) {
   $parent_element = _telephone_sms_verify_get_element_by_array_path($form, $path);
   $parent_element_state = _telephone_sms_verify_get_element_by_array_path($form_state['values'], $path);
 
+  $id_prefix = implode('-', preg_replace('$_$', '-', $parent_element['#array_parents']));
+
+  // Only validate when smscode verification button clicked
+  if ($form_state['triggering_element']['#name'] != $id_prefix . '-send-smscode-btn-op') {
+    return;
+  }
+
   $settings = $parent_element['#settings'];
   $phone_number = _telephone_sms_verify_format_default_value($parent_element_state['value']);
   if ($settings['widget'] && isset($phone_number['value'])) {
