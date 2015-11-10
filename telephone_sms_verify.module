@@ -52,7 +52,6 @@ function telephone_sms_verify_admin_form($form, &$form_state) {
     'telephone_sms_verify_sms_code_count_down' => variable_get('telephone_sms_verify_sms_code_count_down', 30),
     'telephone_sms_verify_sms_code_max_request_per_hour' => variable_get('telephone_sms_verify_sms_code_max_request_per_hour', 2),
     'telephone_sms_verify_sms_code_max_request_per_day' => variable_get('telephone_sms_verify_sms_code_max_request_per_day', 5),
-    'telephone_sms_verify_sms_code_max_request_before_expire' => variable_get('telephone_sms_verify_telephone_sms_verify_sms_code_max_request_before_expire', 3),
     'telephone_sms_verify_display_sms_code_verify' => variable_get('telephone_sms_verify_display_sms_code_verify', TRUE),
     'telephone_sms_verify_require_sms_code_verify_on_change' => variable_get('telephone_sms_verify_require_sms_code_verify_on_change', TRUE),
   );
@@ -129,16 +128,6 @@ function telephone_sms_verify_build_settings_form(&$element, $settings) {
     '#element_validate' => array('element_validate_integer_positive'),
   );
 
-  $element['telephone_sms_verify_sms_code_max_request_before_expire'] = array(
-    '#type' => 'textfield',
-    '#size' => 6,
-    '#title' => t('SMS Code Max Request Before Expiration'),
-    '#maxlength' => 6,
-    '#description' => t('The maximum times that the SMS code can be requested in the expiration time.'),
-    '#default_value' => $settings['telephone_sms_verify_sms_code_max_request_before_expire'],
-    '#element_validate' => array('element_validate_integer_positive'),
-  );
-
   $element['telephone_sms_verify_display_sms_code_verify'] = array(
     '#title' => t('Display SMS code verify'),
     '#type' => 'radios',
@@ -174,7 +163,6 @@ function telephone_sms_verify_field_widget_info() {
         'telephone_sms_verify_sms_code_count_down' => variable_get('telephone_sms_verify_sms_code_count_down', 30),
         'telephone_sms_verify_sms_code_max_request_per_hour' => variable_get('telephone_sms_verify_sms_code_max_request_per_hour', 2),
         'telephone_sms_verify_sms_code_max_request_per_day' => variable_get('telephone_sms_verify_sms_code_max_request_per_day', 5),
-        'telephone_sms_verify_sms_code_max_request_before_expire' => variable_get('telephone_sms_verify_telephone_sms_verify_sms_code_max_request_before_expire', 3),
         'telephone_sms_verify_display_sms_code_verify' => variable_get('telephone_sms_verify_display_sms_code_verify', TRUE),
         'telephone_sms_verify_require_sms_code_verify_on_change' => variable_get('telephone_sms_verify_require_sms_code_verify_on_change', TRUE),
         'sms_code_verify_not_displayed_forms' => '',
@@ -322,24 +310,8 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   $expire = $settings['telephone_sms_verify_sms_code_expire'];
   $length = $settings['telephone_sms_verify_sms_code_length'];
 
-  $last_record = db_select('telephone_sms_verify_history', 'h')
-    ->fields('h', array('code', 'created'))
-    ->condition('phone', $phone_number)
-    ->condition('form_id', $form_id)
-    ->orderBy('sent', 'DESC')
-    ->range(0, 1)
-    ->execute()
-    ->fetchAssoc();
-
-  // Generate SMS verification code if not set or has expired
-  if (empty($last_record) || $last_record['created'] + 60 * $expire < time()) {
-    $record['code'] = sprintf('%0' . $length . 'd', rand(0, (int) str_repeat('9', $length)));
-    $record['created'] = time();
-  }
-  else {
-    $record['code'] = $last_record['code'];
-    $record['created'] = $last_record['created'];
-  }
+  $record['code'] = sprintf('%0' . $length . 'd', rand(0, (int) str_repeat('9', $length)));
+  $record['created'] = time();
 
   // Get SMS verification template from field widget settings
   $template = t($settings['telephone_sms_verify_sms_template']);
@@ -422,12 +394,8 @@ function telephone_sms_verify_value_validate($element, &$form_state, $form) {
     return;
   }
 
-  $expire = $settings['telephone_sms_verify_sms_code_expire'];
-
   //Compute session key
   $form_id = $form_state['values']['form_id'];
-
-  $max_request_before_expire = $settings['telephone_sms_verify_sms_code_max_request_before_expire'];
 
   // Do not send sms verification code on account editing page and the phone number is not changed
   if ($settings['telephone_sms_verify_require_sms_code_verify_on_change'] && $phone_number == $phone_number_default) {
@@ -436,23 +404,6 @@ function telephone_sms_verify_value_validate($element, &$form_state, $form) {
 
   $max_request_per_hour = $settings['telephone_sms_verify_sms_code_max_request_per_hour'];
   $max_request_per_day = $settings['telephone_sms_verify_sms_code_max_request_per_day'];
-
-  $last_record = db_select('telephone_sms_verify_history', 'h')
-    ->fields('h', array('created'))
-    ->condition('created', time() - 60 * $expire, '>=')
-    ->condition('phone', $phone_number)
-    ->condition('form_id', $form_id)
-    ->orderBy('sent', 'DESC')
-    ->range(0, 1)
-    ->execute()
-    ->fetchAssoc();
-
-  $records_count = db_select('telephone_sms_verify_history', 'h')
-    ->fields('h', array('hid'))
-    ->condition('created', $last_record['created'])
-    ->countQuery()
-    ->execute()
-    ->fetchField();
 
   $max_request_per_hour_in_db = db_select('telephone_sms_verify_history', 'h')
     ->fields('h', array('hid'))
@@ -470,11 +421,7 @@ function telephone_sms_verify_value_validate($element, &$form_state, $form) {
     ->execute()
     ->rowCount();
 
-  if ($last_record && $records_count >= $max_request_before_expire) {
-    $minutes_left = ceil((($last_record['created'] + 60 * $expire) - time()) / 60);
-    form_error($element, t('You have reached the maximum request limitation, please try again after @expire minutes', array('@expire' => $minutes_left)));
-  }
-  elseif ($max_request_per_hour_in_db >= $max_request_per_hour) {
+  if ($max_request_per_hour_in_db >= $max_request_per_hour) {
     form_error($element, t('You have reached the maximum request limitation in this hour.'));
   }
   elseif ($max_request_per_day_in_db >= $max_request_per_day) {
@@ -579,7 +526,6 @@ function telephone_sms_verify_element_info() {
       'telephone_sms_verify_sms_code_count_down' => variable_get('telephone_sms_verify_sms_code_count_down', 30),
       'telephone_sms_verify_sms_code_max_request_per_hour' => variable_get('telephone_sms_verify_sms_code_max_request_per_hour', 2),
       'telephone_sms_verify_sms_code_max_request_per_day' => variable_get('telephone_sms_verify_sms_code_max_request_per_day', 5),
-      'telephone_sms_verify_sms_code_max_request_before_expire' => variable_get('telephone_sms_verify_sms_code_max_request_before_expire', 3),
       'telephone_sms_verify_display_sms_code_verify' => variable_get('telephone_sms_verify_display_sms_code_verify', TRUE),
       'telephone_sms_verify_require_sms_code_verify_on_change' => variable_get('telephone_sms_verify_require_sms_code_verify_on_change', TRUE),
     ),
