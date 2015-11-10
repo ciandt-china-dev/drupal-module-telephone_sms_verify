@@ -1,0 +1,60 @@
+<?php
+
+function telephone_sms_verify_schema() {
+  $schema['telephone_sms_verify_history'] = array(
+    'The sms code history for telephone_sms_verify',
+    'fields' => array(
+      'hid' => array(
+        'description' => 'The primary identifier for a history.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'phone' => array(
+        'description' => 'The number who call the send sms verify code function',
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+      ),
+      'form_id' => array(
+        'description' => 'The form id',
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+      ),
+      'sent' => array(
+        'description' => 'The Unix timestamp when the sms code was sent.',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'created' => array(
+        'description' => 'The Unix timestamp when the sms code was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'code'=>array(
+        'description' => 'The verify code in the sms was sent.',
+        'type' => 'varchar',
+        'length' => '10',
+        'not null' => TRUE,
+      ),
+      'content' => array(
+        'description' => 'The sms content',
+        'type' => 'text',
+        'not null' => TRUE,
+        'size' => 'medium',
+      ),
+    ),
+    'indexes' => array(
+      'phone' => array('phone'),
+    ),
+    'primary key' => array('hid'),
+  );
+  return $schema;
+}
+
+function telephone_sms_verify_update_7100() {
+  if (!db_table_exists('telephone_sms_verify_history')) {
+    db_create_table('telephone_sms_verify_history', drupal_get_schema_unprocessed('telephone_sms_verify', 'telephone_sms_verify_history'));
+  }
+}
