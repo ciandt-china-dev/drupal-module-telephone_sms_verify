@@ -11,13 +11,13 @@ define('DEFAULT_VERIFICATION_MESSAGE_TEMPLATE', 'Your SMS verification code is [
  * Implements hook_menu().
  */
 function telephone_sms_verify_menu() {
-  $items['admin/config/telephone-sms-verify'] = array(
+  $items['admin/config/system/telephone-sms-verify'] = array(
     'title' => 'Telephone SMS Verify',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('telephone_sms_verify_admin_form'),
     'access callback' => 'user_access',
     'access arguments' => array('telephone sms verify config'),
-    'type' => MENU_LOCAL_TASK,
+    'type' => MENU_NORMAL_ITEM,
   );
   return $items;
 }
