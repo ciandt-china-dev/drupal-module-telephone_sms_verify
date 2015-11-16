@@ -53,8 +53,38 @@ function telephone_sms_verify_schema() {
   return $schema;
 }
 
+function telephone_sms_verify_uninstall() {
+  variable_del('telephone_sms_verify_sms_template');
+  variable_del('telephone_sms_verify_sms_code_expire');
+  variable_del('telephone_sms_verify_sms_code_length');
+  variable_del('telephone_sms_verify_sms_code_count_down');
+  variable_del('telephone_sms_verify_sms_code_max_request_per_hour');
+  variable_del('telephone_sms_verify_sms_code_max_request_per_day');
+  variable_del('telephone_sms_verify_display_sms_code_verify');
+  variable_del('telephone_sms_verify_require_sms_code_verify');
+}
+
+function telephone_sms_verify_install() {
+  _telephone_sms_verify_variable_initialize();
+}
+
 function telephone_sms_verify_update_7100() {
   if (!db_table_exists('telephone_sms_verify_history')) {
     db_create_table('telephone_sms_verify_history', drupal_get_schema_unprocessed('telephone_sms_verify', 'telephone_sms_verify_history'));
   }
+}
+
+function telephone_sms_verify_update_7101() {
+  _telephone_sms_verify_variable_initialize();
+}
+
+function _telephone_sms_verify_variable_initialize() {
+  variable_set('telephone_sms_verify_sms_template', DEFAULT_VERIFICATION_MESSAGE_TEMPLATE);
+  variable_set('telephone_sms_verify_sms_code_expire', DEFAULT_TELEPHONE_SMS_VERIFY_SMS_CODE_EXPIRE);
+  variable_set('telephone_sms_verify_sms_code_length', DEFAULT_TELEPHONE_SMS_VERIFY_SMS_CODE_LENGTH);
+  variable_set('telephone_sms_verify_sms_code_count_down', DEFAULT_TELEPHONE_SMS_VERIFY_SMS_CODE_COUNT_DOWN);
+  variable_set('telephone_sms_verify_sms_code_max_request_per_hour', DEFAULT_TELEPHONE_SMS_VERIFY_SMS_CODE_MAX_REQUEST_PER_HOUR);
+  variable_set('telephone_sms_verify_sms_code_max_request_per_day', DEFAULT_TELEPHONE_SMS_VERIFY_SMS_CODE_MAX_REQUEST_PER_DAY);
+  variable_set('telephone_sms_verify_display_sms_code_verify', DEFAULT_TELEPHONE_SMS_VERIFY_DISPLAY_SMS_CODE_VERIFY);
+  variable_set('telephone_sms_verify_require_sms_code_verify', DEFAULT_TELEPHONE_SMS_VERIFY_REQUIRE_SMS_CODE_VERIFY);
 }

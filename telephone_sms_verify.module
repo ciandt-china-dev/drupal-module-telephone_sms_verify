@@ -6,6 +6,13 @@
  */
 
 define('DEFAULT_VERIFICATION_MESSAGE_TEMPLATE', 'Your SMS verification code is [phone_sms_verify:verify_code]. This code will be expired in [phone_sms_verify:expire_time] minutes.');
+define('DEFAULT_TELEPHONE_SMS_VERIFY_SMS_CODE_EXPIRE', 30);
+define('DEFAULT_TELEPHONE_SMS_VERIFY_SMS_CODE_LENGTH', 6);
+define('DEFAULT_TELEPHONE_SMS_VERIFY_SMS_CODE_COUNT_DOWN', 30);
+define('DEFAULT_TELEPHONE_SMS_VERIFY_SMS_CODE_MAX_REQUEST_PER_HOUR', 2);
+define('DEFAULT_TELEPHONE_SMS_VERIFY_SMS_CODE_MAX_REQUEST_PER_DAY', 5);
+define('DEFAULT_TELEPHONE_SMS_VERIFY_DISPLAY_SMS_CODE_VERIFY', TRUE);
+define('DEFAULT_TELEPHONE_SMS_VERIFY_REQUIRE_SMS_CODE_VERIFY', TRUE);
 
 /**
  * Implements hook_menu().
@@ -47,13 +54,13 @@ function telephone_sms_verify_permission() {
 function telephone_sms_verify_admin_form($form, &$form_state) {
   $settings = array(
     'telephone_sms_verify_sms_template' => variable_get('telephone_sms_verify_sms_template', t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE)),
-    'telephone_sms_verify_sms_code_expire' => variable_get('telephone_sms_verify_sms_code_expire', 30),
-    'telephone_sms_verify_sms_code_length' => variable_get('telephone_sms_verify_sms_code_length', 6),
-    'telephone_sms_verify_sms_code_count_down' => variable_get('telephone_sms_verify_sms_code_count_down', 30),
-    'telephone_sms_verify_sms_code_max_request_per_hour' => variable_get('telephone_sms_verify_sms_code_max_request_per_hour', 2),
-    'telephone_sms_verify_sms_code_max_request_per_day' => variable_get('telephone_sms_verify_sms_code_max_request_per_day', 5),
-    'telephone_sms_verify_display_sms_code_verify' => variable_get('telephone_sms_verify_display_sms_code_verify', TRUE),
-    'telephone_sms_verify_require_sms_code_verify' => variable_get('telephone_sms_verify_require_sms_code_verify', TRUE),
+    'telephone_sms_verify_sms_code_expire' => variable_get('telephone_sms_verify_sms_code_expire', DEFAULT_TELEPHONE_SMS_VERIFY_SMS_CODE_EXPIRE),
+    'telephone_sms_verify_sms_code_length' => variable_get('telephone_sms_verify_sms_code_length', DEFAULT_TELEPHONE_SMS_VERIFY_SMS_CODE_LENGTH),
+    'telephone_sms_verify_sms_code_count_down' => variable_get('telephone_sms_verify_sms_code_count_down', DEFAULT_TELEPHONE_SMS_VERIFY_SMS_CODE_COUNT_DOWN),
+    'telephone_sms_verify_sms_code_max_request_per_hour' => variable_get('telephone_sms_verify_sms_code_max_request_per_hour', DEFAULT_TELEPHONE_SMS_VERIFY_SMS_CODE_MAX_REQUEST_PER_HOUR),
+    'telephone_sms_verify_sms_code_max_request_per_day' => variable_get('telephone_sms_verify_sms_code_max_request_per_day', DEFAULT_TELEPHONE_SMS_VERIFY_SMS_CODE_MAX_REQUEST_PER_DAY),
+    'telephone_sms_verify_display_sms_code_verify' => variable_get('telephone_sms_verify_display_sms_code_verify', DEFAULT_TELEPHONE_SMS_VERIFY_DISPLAY_SMS_CODE_VERIFY),
+    'telephone_sms_verify_require_sms_code_verify' => variable_get('telephone_sms_verify_require_sms_code_verify', DEFAULT_TELEPHONE_SMS_VERIFY_REQUIRE_SMS_CODE_VERIFY),
     'telephone_sms_verify_sms_code_validate_callback' => variable_get('telephone_sms_verify_sms_code_validate_callback', ''),
     'telephone_sms_verify_value_validate_callback' => variable_get('telephone_sms_verify_value_validate_callback', ''),
   );
@@ -160,13 +167,13 @@ function telephone_sms_verify_field_widget_info() {
         'captcha' => TRUE,
         'captcha_type' => 'default',
         'telephone_sms_verify_sms_template' => variable_get('telephone_sms_verify_sms_template', DEFAULT_VERIFICATION_MESSAGE_TEMPLATE),
-        'telephone_sms_verify_sms_code_expire' => variable_get('telephone_sms_verify_sms_code_expire', 30),
-        'telephone_sms_verify_sms_code_length' => variable_get('telephone_sms_verify_sms_code_length', 6),
-        'telephone_sms_verify_sms_code_count_down' => variable_get('telephone_sms_verify_sms_code_count_down', 30),
-        'telephone_sms_verify_sms_code_max_request_per_hour' => variable_get('telephone_sms_verify_sms_code_max_request_per_hour', 2),
-        'telephone_sms_verify_sms_code_max_request_per_day' => variable_get('telephone_sms_verify_sms_code_max_request_per_day', 5),
-        'telephone_sms_verify_display_sms_code_verify' => variable_get('telephone_sms_verify_display_sms_code_verify', TRUE),
-        'telephone_sms_verify_require_sms_code_verify' => variable_get('telephone_sms_verify_require_sms_code_verify', TRUE),
+        'telephone_sms_verify_sms_code_expire' => variable_get('telephone_sms_verify_sms_code_expire', DEFAULT_TELEPHONE_SMS_VERIFY_SMS_CODE_EXPIRE),
+        'telephone_sms_verify_sms_code_length' => variable_get('telephone_sms_verify_sms_code_length', DEFAULT_TELEPHONE_SMS_VERIFY_SMS_CODE_LENGTH),
+        'telephone_sms_verify_sms_code_count_down' => variable_get('telephone_sms_verify_sms_code_count_down', DEFAULT_TELEPHONE_SMS_VERIFY_SMS_CODE_COUNT_DOWN),
+        'telephone_sms_verify_sms_code_max_request_per_hour' => variable_get('telephone_sms_verify_sms_code_max_request_per_hour', DEFAULT_TELEPHONE_SMS_VERIFY_SMS_CODE_MAX_REQUEST_PER_HOUR),
+        'telephone_sms_verify_sms_code_max_request_per_day' => variable_get('telephone_sms_verify_sms_code_max_request_per_day', DEFAULT_TELEPHONE_SMS_VERIFY_SMS_CODE_MAX_REQUEST_PER_DAY),
+        'telephone_sms_verify_display_sms_code_verify' => variable_get('telephone_sms_verify_display_sms_code_verify', DEFAULT_TELEPHONE_SMS_VERIFY_DISPLAY_SMS_CODE_VERIFY),
+        'telephone_sms_verify_require_sms_code_verify' => variable_get('telephone_sms_verify_require_sms_code_verify', DEFAULT_TELEPHONE_SMS_VERIFY_REQUIRE_SMS_CODE_VERIFY),
         'telephone_sms_verify_sms_code_validate_callback' => variable_get('telephone_sms_verify_sms_code_validate_callback', ''),
         'telephone_sms_verify_value_validate_callback' => variable_get('telephone_sms_verify_value_validate_callback', ''),
         'sms_code_verify_not_displayed_forms' => '',
