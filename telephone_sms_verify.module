@@ -402,21 +402,6 @@ function telephone_sms_verify_value_validate($element, &$form_state, $form) {
     form_error($element, t('Your phone number has not changed, no SMS verification code is sent.'));
   }
 
-  try {
-    $api = _pfimed_grv_get_api();
-    $filter = 'phoneNumber.mobile=\'' . $phone_number . '\'';
-    $attribute = array("id");
-
-    $result = $api->checkUserIsExist($filter, $attribute);
-    if ($result['result_count']) {
-      form_error($element, t('This phone number is already in grv.'));
-    }
-  }
-  catch (Exception $e) {
-    watchdog('GRV', $e->getMessage());
-    form_error($element, t(GRV_SERVICE_NETWORK_ERROR));
-  }
-
   $max_request_per_hour = $settings['telephone_sms_verify_sms_code_max_request_per_hour'];
   $max_request_per_day = $settings['telephone_sms_verify_sms_code_max_request_per_day'];
 
@@ -606,7 +591,7 @@ function _telephone_sms_verify_element_expand($element, &$form_state, $complete_
     '#suffix' => '</div>',
     '#attributes' => $element['#attributes'],
     '#placeholder' => $settings['placeholder'],
-    '#element_validate' => array('telephone_sms_verify_value_validate'),
+    '#element_validate' => array('telephone_sms_verify_value_validate', 'pfimed_grv_check_phone_number'),
   );
 
   if (isset($complete_form['#form_placeholder'])) {
