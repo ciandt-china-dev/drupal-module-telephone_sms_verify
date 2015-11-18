@@ -399,7 +399,15 @@ function telephone_sms_verify_value_validate($element, &$form_state, $form) {
 
   // Do not send sms verification code on account editing page and the phone number is not changed
   if ($settings['telephone_sms_verify_require_sms_code_verify_on_change'] && $phone_number == $phone_number_default) {
-    form_error($element, t('Your phone number has not changed, no SMS verification code is sent.'));
+    if (user_is_logged_in()) {
+      global $user;
+      if ($user->phone_verify) {
+        form_error($element, t('Your phone number has not changed, no SMS verification code is sent.'));
+      }
+    }
+    else {
+      form_error($element, t('Your phone number has not changed, no SMS verification code is sent.'));
+    }
   }
 
   $max_request_per_hour = $settings['telephone_sms_verify_sms_code_max_request_per_hour'];
