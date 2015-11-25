@@ -32,7 +32,7 @@ function telephone_sms_verify_schema() {
         'type' => 'int',
         'not null' => TRUE,
       ),
-      'code'=>array(
+      'code' => array(
         'description' => 'The verify code in the sms was sent.',
         'type' => 'varchar',
         'length' => '10',
