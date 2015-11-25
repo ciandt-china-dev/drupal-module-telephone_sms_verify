@@ -593,6 +593,7 @@ function _telephone_sms_verify_element_expand($element, &$form_state, $complete_
     '#required' => $element['#required'],
     '#maxlength' => isset($element['#maxlength']) ? $element['#maxlength'] : 11,
     '#description' => $element['#description'],
+    '#disabled' => $element['#disabled'],
     '#default_value' => $element['#default_value'],
     '#weight' => 0,
     '#prefix' => '<div id="' . $id_prefix . '-value-wrapper">',
@@ -601,6 +602,10 @@ function _telephone_sms_verify_element_expand($element, &$form_state, $complete_
     '#placeholder' => $settings['placeholder'],
     '#element_validate' => array('telephone_sms_verify_value_validate', 'pfimed_grv_check_phone_number'),
   );
+  
+  if (isset($element['#attributes']['disabled'])) {
+    unset($element['#attributes']['disabled']);
+  }
 
   if (isset($complete_form['#form_placeholder'])) {
     $element['value']['#form_placeholder'] = $complete_form['#form_placeholder'];
