@@ -593,7 +593,7 @@ function _telephone_sms_verify_element_expand($element, &$form_state, $complete_
     '#required' => $element['#required'],
     '#maxlength' => isset($element['#maxlength']) ? $element['#maxlength'] : 11,
     '#description' => $element['#description'],
-    '#disabled' => $element['#disabled'],
+    '#disabled' => isset($element['#disabled']) ? $element['#disabled'] : FALSE,
     '#default_value' => $element['#default_value'],
     '#weight' => 0,
     '#prefix' => '<div id="' . $id_prefix . '-value-wrapper">',
