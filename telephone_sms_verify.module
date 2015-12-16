@@ -54,6 +54,7 @@ function telephone_sms_verify_admin_form($form, &$form_state) {
     'telephone_sms_verify_sms_code_max_request_per_day' => variable_get('telephone_sms_verify_sms_code_max_request_per_day', 5),
     'telephone_sms_verify_display_sms_code_verify' => variable_get('telephone_sms_verify_display_sms_code_verify', TRUE),
     'telephone_sms_verify_require_sms_code_verify' => variable_get('telephone_sms_verify_require_sms_code_verify', TRUE),
+    'telephone_sms_verify_require_sms_code_verify_callback' => variable_get('telephone_sms_verify_require_sms_code_verify_callback', ''),
   );
   telephone_sms_verify_build_settings_form($form, $settings);
   return system_settings_form($form);
@@ -430,6 +431,10 @@ function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
     $phone_number = $phone_number['value'];
   }
   $phone_number_default = isset($parent_element['value']['#default_value']) ? $parent_element['value']['#default_value'] : '';
+
+  if ($require_callback = $settings['telephone_sms_verify_require_sms_code_verify_callback'] && function_exists($require_callback)) {
+    $settings['telephone_sms_verify_require_sms_code_verify'] = call_user_func_array($require_callback, array($settings, $phone_number, $phone_number_default, $element, $form_state, $form));
+  }
 
   if ($settings['telephone_sms_verify_require_sms_code_verify']) {
     if (empty($element['#value'])) {
