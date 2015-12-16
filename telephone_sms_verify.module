@@ -53,7 +53,7 @@ function telephone_sms_verify_admin_form($form, &$form_state) {
     'telephone_sms_verify_sms_code_max_request_per_hour' => variable_get('telephone_sms_verify_sms_code_max_request_per_hour', 2),
     'telephone_sms_verify_sms_code_max_request_per_day' => variable_get('telephone_sms_verify_sms_code_max_request_per_day', 5),
     'telephone_sms_verify_display_sms_code_verify' => variable_get('telephone_sms_verify_display_sms_code_verify', TRUE),
-    'telephone_sms_verify_require_sms_code_verify_on_change' => variable_get('telephone_sms_verify_require_sms_code_verify_on_change', TRUE),
+    'telephone_sms_verify_require_sms_code_verify' => variable_get('telephone_sms_verify_require_sms_code_verify', TRUE),
   );
   telephone_sms_verify_build_settings_form($form, $settings);
   return system_settings_form($form);
@@ -136,12 +136,12 @@ function telephone_sms_verify_build_settings_form(&$element, $settings) {
     '#default_value' => $settings['telephone_sms_verify_display_sms_code_verify'],
   );
 
-  $element['telephone_sms_verify_require_sms_code_verify_on_change'] = array(
-    '#title' => t('Require SMS code verify on change'),
+  $element['telephone_sms_verify_require_sms_code_verify'] = array(
+    '#title' => t('Require SMS code verify'),
     '#type' => 'radios',
-    '#description' => t('Require SMS code verify on change'),
+    '#description' => t('Require SMS code verify'),
     '#options' => array( TRUE => t('Yes'), FALSE => t('No')),
-    '#default_value' => $settings['telephone_sms_verify_require_sms_code_verify_on_change'],
+    '#default_value' => $settings['telephone_sms_verify_require_sms_code_verify'],
   );
 }
 
@@ -164,7 +164,7 @@ function telephone_sms_verify_field_widget_info() {
         'telephone_sms_verify_sms_code_max_request_per_hour' => variable_get('telephone_sms_verify_sms_code_max_request_per_hour', 2),
         'telephone_sms_verify_sms_code_max_request_per_day' => variable_get('telephone_sms_verify_sms_code_max_request_per_day', 5),
         'telephone_sms_verify_display_sms_code_verify' => variable_get('telephone_sms_verify_display_sms_code_verify', TRUE),
-        'telephone_sms_verify_require_sms_code_verify_on_change' => variable_get('telephone_sms_verify_require_sms_code_verify_on_change', TRUE),
+        'telephone_sms_verify_require_sms_code_verify' => variable_get('telephone_sms_verify_require_sms_code_verify', TRUE),
         'sms_code_verify_not_displayed_forms' => '',
         'sms_code_verify_required_on_phone_changes_forms' => 'user_profile_form',
       ),
@@ -198,7 +198,7 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
 
   // Allow to mark sms code verify not required on specific forms
   if (in_array($form_id, _telephone_sms_verify_explode_multi_lines($settings['sms_code_verify_required_on_phone_changes_forms']))) {
-    $settings['telephone_sms_verify_require_sms_code_verify_on_change'] = FALSE;
+    $settings['telephone_sms_verify_require_sms_code_verify'] = FALSE;
   }
 
   $element += array(
@@ -397,19 +397,6 @@ function telephone_sms_verify_value_validate($element, &$form_state, $form) {
   //Compute session key
   $form_id = $form_state['values']['form_id'];
 
-  // Do not send sms verification code on account editing page and the phone number is not changed
-  if ($settings['telephone_sms_verify_require_sms_code_verify_on_change'] && $phone_number == $phone_number_default) {
-    if (user_is_logged_in()) {
-      global $user;
-      if ($user->phone_verify) {
-        form_error($element, t('Your phone number has not changed, no SMS verification code is sent.'));
-      }
-    }
-    else {
-      form_error($element, t('Your phone number has not changed, no SMS verification code is sent.'));
-    }
-  }
-
   $max_request_per_hour = $settings['telephone_sms_verify_sms_code_max_request_per_hour'];
   $max_request_per_day = $settings['telephone_sms_verify_sms_code_max_request_per_day'];
 
@@ -457,8 +444,7 @@ function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
   }
   $phone_number_default = isset($parent_element['value']['#default_value']) ? $parent_element['value']['#default_value'] : '';
 
-  // Only validates this field if the telephone number is newly added or changed
-  if ($phone_number != $phone_number_default) {
+  if ($settings['telephone_sms_verify_require_sms_code_verify']) {
     if (empty($element['#value'])) {
       form_error($element, t('This field is required.'));
     }
@@ -535,7 +521,7 @@ function telephone_sms_verify_element_info() {
       'telephone_sms_verify_sms_code_max_request_per_hour' => variable_get('telephone_sms_verify_sms_code_max_request_per_hour', 2),
       'telephone_sms_verify_sms_code_max_request_per_day' => variable_get('telephone_sms_verify_sms_code_max_request_per_day', 5),
       'telephone_sms_verify_display_sms_code_verify' => variable_get('telephone_sms_verify_display_sms_code_verify', TRUE),
-      'telephone_sms_verify_require_sms_code_verify_on_change' => variable_get('telephone_sms_verify_require_sms_code_verify_on_change', TRUE),
+      'telephone_sms_verify_require_sms_code_verify' => variable_get('telephone_sms_verify_require_sms_code_verify', TRUE),
     ),
     '#value_callback' => '_telephone_sms_verify_element_value',
     '#element_validate' => array('telephone_sms_verify_validate'),
@@ -694,7 +680,7 @@ function _telephone_sms_verify_element_expand($element, &$form_state, $complete_
       '#weight' => 1,
       '#prefix' => '<div id="' . $id_prefix . '-sms-verification-code-wrapper" class="sms-verification-code">',
       '#element_validate' => array('telephone_sms_verify_smscode_validate'),
-      '#required' => $settings['telephone_sms_verify_require_sms_code_verify_on_change'],
+      '#required' => $settings['telephone_sms_verify_require_sms_code_verify'],
     );
 
     $element['send_smscode'] = array(
