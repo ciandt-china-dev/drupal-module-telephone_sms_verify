@@ -54,7 +54,8 @@ function telephone_sms_verify_admin_form($form, &$form_state) {
     'telephone_sms_verify_sms_code_max_request_per_day' => variable_get('telephone_sms_verify_sms_code_max_request_per_day', 5),
     'telephone_sms_verify_display_sms_code_verify' => variable_get('telephone_sms_verify_display_sms_code_verify', TRUE),
     'telephone_sms_verify_require_sms_code_verify' => variable_get('telephone_sms_verify_require_sms_code_verify', TRUE),
-    'telephone_sms_verify_require_sms_code_verify_callback' => variable_get('telephone_sms_verify_require_sms_code_verify_callback', ''),
+    'telephone_sms_verify_sms_code_validate_callback' => variable_get('telephone_sms_verify_sms_code_validate_callback', ''),
+    'telephone_sms_verify_value_validate_callback' => variable_get('telephone_sms_verify_value_validate_callback', ''),
   );
   telephone_sms_verify_build_settings_form($form, $settings);
   return system_settings_form($form);
@@ -166,6 +167,8 @@ function telephone_sms_verify_field_widget_info() {
         'telephone_sms_verify_sms_code_max_request_per_day' => variable_get('telephone_sms_verify_sms_code_max_request_per_day', 5),
         'telephone_sms_verify_display_sms_code_verify' => variable_get('telephone_sms_verify_display_sms_code_verify', TRUE),
         'telephone_sms_verify_require_sms_code_verify' => variable_get('telephone_sms_verify_require_sms_code_verify', TRUE),
+        'telephone_sms_verify_sms_code_validate_callback' => variable_get('telephone_sms_verify_sms_code_validate_callback', ''),
+        'telephone_sms_verify_value_validate_callback' => variable_get('telephone_sms_verify_value_validate_callback', ''),
         'sms_code_verify_not_displayed_forms' => '',
       ),
       'behaviors' => array(
@@ -384,6 +387,10 @@ function telephone_sms_verify_value_validate($element, &$form_state, $form) {
 
   //Compute session key
   $form_id = $form_state['values']['form_id'];
+  $require_callback = $settings['telephone_sms_verify_value_validate_callback'];
+  if (function_exists($require_callback)) {
+    $settings['telephone_sms_verify_value_validate_callback'] = call_user_func_array($require_callback, array($settings, $phone_number, $phone_number_default, $element, $form_state, $form));
+  }
 
   $max_request_per_hour = $settings['telephone_sms_verify_sms_code_max_request_per_hour'];
   $max_request_per_day = $settings['telephone_sms_verify_sms_code_max_request_per_day'];
@@ -432,8 +439,9 @@ function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
   }
   $phone_number_default = isset($parent_element['value']['#default_value']) ? $parent_element['value']['#default_value'] : '';
 
-  if ($require_callback = $settings['telephone_sms_verify_require_sms_code_verify_callback'] && function_exists($require_callback)) {
-    $settings['telephone_sms_verify_require_sms_code_verify'] = call_user_func_array($require_callback, array($settings, $phone_number, $phone_number_default, $element, $form_state, $form));
+  $require_callback = $settings['telephone_sms_verify_sms_code_validate_callback'];
+  if (function_exists($require_callback)) {
+    $settings['telephone_sms_verify_sms_code_validate_callback'] = call_user_func_array($require_callback, array($settings, $phone_number, $phone_number_default, $element, $form_state, $form));
   }
 
   if ($settings['telephone_sms_verify_require_sms_code_verify']) {
@@ -514,6 +522,8 @@ function telephone_sms_verify_element_info() {
       'telephone_sms_verify_sms_code_max_request_per_day' => variable_get('telephone_sms_verify_sms_code_max_request_per_day', 5),
       'telephone_sms_verify_display_sms_code_verify' => variable_get('telephone_sms_verify_display_sms_code_verify', TRUE),
       'telephone_sms_verify_require_sms_code_verify' => variable_get('telephone_sms_verify_require_sms_code_verify', TRUE),
+      'telephone_sms_verify_sms_code_validate_callback' => variable_get('telephone_sms_verify_sms_code_validate_callback', ''),
+      'telephone_sms_verify_value_validate_callback' => variable_get('telephone_sms_verify_value_validate_callback', ''),
     ),
     '#value_callback' => '_telephone_sms_verify_element_value',
     '#element_validate' => array('telephone_sms_verify_validate'),
