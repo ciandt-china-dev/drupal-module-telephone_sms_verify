@@ -233,7 +233,7 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
     $template = t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE);
   }
 
-  $template = token_replace($template, array(
+  $template = \Drupal::token()->replace($template, array(
     'phone_sms_verify' => array(
       'verify_code' => $_SESSION[$session_key]['code'],
       'expire_time' => $expire
