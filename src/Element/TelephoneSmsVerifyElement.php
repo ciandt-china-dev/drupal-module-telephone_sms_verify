@@ -1,8 +1,14 @@
 <?php
 
-namespace Drupal\telephone_sms_verify\Render\Element;
+/**
+ * @file
+ * Contains \Drupal\telephone_sms_verify\Element\TelephoneSmsVerifyElement.
+ */
 
-use  \Drupal\Core\Ajax\RemoveCommand;
+namespace Drupal\telephone_sms_verify\Element;
+
+use Drupal\Core\Render\Element;
+use \Drupal\Core\Ajax\RemoveCommand;
 use \Drupal\Core\Ajax\ReplaceCommand;
 use \Drupal\Core\Ajax\InvokeCommand;
 use Drupal\Core\Render\Element\FormElement;
@@ -46,7 +52,9 @@ class TelephoneSmsVerifyElement extends FormElement {
       '#required' => FALSE,
       '#process' => array(
         array($class, '_telephone_sms_verify_element_expand'),
-        array($class, 'form_process_container')
+      ),
+      '#pre_render' => array(
+        array($class, 'preRenderTel'),
       ),
       '#description' => t('Telephone number'),
       '#default_value' => '',
@@ -74,6 +82,29 @@ class TelephoneSmsVerifyElement extends FormElement {
     );
   }
 
+  /**
+   * {@inheritdoc}
+   */
+//  public function getInfo() {
+//    $class = get_class($this);
+//    return array(
+//      '#input' => TRUE,
+//      '#size' => 30,
+//      '#maxlength' => 128,
+//      '#autocomplete_route_name' => FALSE,
+//      '#process' => array(
+//        array($class, 'processAutocomplete'),
+//        array($class, 'processAjaxForm'),
+//        array($class, 'processPattern'),
+//      ),
+//      '#pre_render' => array(
+//        array($class, 'preRenderTel'),
+//      ),
+//      '#theme' => 'input__tel',
+//      '#theme_wrappers' => array('form_element'),
+//    );
+//  }
+
   public static function _telephone_sms_verify_element_expand(&$element, FormStateInterface &$form_state, &$complete_form) {
     if (!isset($element['#settings'])) {
       $element['#settings'] = array();
@@ -81,9 +112,10 @@ class TelephoneSmsVerifyElement extends FormElement {
     $element['#settings'] += $element['#default_settings'];
     $settings = $element['#settings'];
 
-    $settings['display_sms_code_verify'] &= !\Drupal::currentUser()
-      ->hasPermission('bypass telephone sms verify');
+//    $settings['display_sms_code_verify'] &= !\Drupal::currentUser()
+//      ->hasPermission('bypass telephone sms verify');
 
+    $settings['display_sms_code_verify'] = true;
     // Give user a chance finally alter the sms code verify element behavior
     $context = array(
       'element' => $element,
@@ -139,15 +171,15 @@ class TelephoneSmsVerifyElement extends FormElement {
         '#weight' => 2,
         '#prefix' => '<div id="' . $id_prefix . '-send-smscode-btn-wrapper"><div id="' . $id_prefix . '-send-smscode-btn">',
         '#suffix' => '</div><div id="' . $id_prefix . '-send-smscode-count-down"></div></div></div>',
-        '#attached' => array(
-          'js' => array(
-            drupal_get_path('module', 'telephone_sms_verify') . '/telephone_sms_verify.js',
-            array(
-              'data' => array('smscode_count_down' => $settings['sms_code_count_down']),
-              'type' => 'setting'
-            ),
-          ),
-        ),
+#        '#attached' => array(
+#          'js' => array(
+#            drupal_get_path('module', 'telephone_sms_verify') . '/telephone_sms_verify.js',
+#            array(
+#              'data' => array('smscode_count_down' => $settings['sms_code_count_down']),
+#              'type' => 'setting'
+#            ),
+#          ),
+#        ),
         '#limit_validation_errors' => array(
           // Validate only the phone number field on AJAX call
           array_merge($element['#array_parents'], array('value')),
@@ -353,5 +385,24 @@ class TelephoneSmsVerifyElement extends FormElement {
 
   public static function formatValue($current, $default = '') {
     return isset($current) ? $current : $default;
+  }
+
+  /**
+   * Prepares a #type 'tel' render element for input.html.twig.
+   *
+   * @param array $element
+   *   An associative array containing the properties of the element.
+   *   Properties used: #title, #value, #description, #size, #maxlength,
+   *   #placeholder, #required, #attributes.
+   *
+   * @return array
+   *   The $element with prepared variables ready for input.html.twig.
+   */
+  public static function preRenderTel($element) {
+    $element['#attributes']['type'] = 'telephone_with_sms_verify';
+    Element::setAttributes($element, array('id', 'name', 'value', 'size', 'maxlength', 'placeholder'));
+    static::setAttributes($element, array('form-tel'));
+
+    return $element;
   }
 }
