@@ -16,7 +16,7 @@ use Drupal\Core\Form\FormStateInterface;
  *
  * @FieldWidget(
  *   id = "telephone_sms_verify_field_widget",
- *   label = @Translation("Telephone SMS verification"),
+ *   label = @Translation("Telephone number with SMS verification"),
  *   field_types = {
  *     "telephone"
  *   }
@@ -28,14 +28,19 @@ class TelephoneSmsVerifyFieldWidget extends WidgetBase {
    */
   public static function defaultSettings() {
     return array(
-      'placeholder' => 'Phone Number',
-      'sms_template' => '',
-      'sms_code_length' => 6,
-      'sms_code_expire' => 30,
-      'sms_code_count_down' => 30,
-      'sms_code_max_request' => 3,
+      'widget' => TRUE,
+      'placeholder' => t('Phone Number'),
+      'captcha' => TRUE,
+      'captcha_type' => 'default',
+      'sms_template' => \Drupal::config('telephone_sms_verify.settings')->get('telephone_sms_verify_sms_template'),
+      'sms_code_expire' => \Drupal::config('telephone_sms_verify.settings')->get('telephone_sms_verify_sms_code_expire'),
+      'sms_code_length' => \Drupal::config('telephone_sms_verify.settings')->get('telephone_sms_verify_sms_code_length'),
+      'sms_code_count_down' => \Drupal::config('telephone_sms_verify.settings')->get('telephone_sms_verify_sms_code_count_down'),
+      'sms_code_max_request' => \Drupal::config('telephone_sms_verify.settings')->get('telephone_sms_verify_sms_code_max_request'),
+      'display_sms_code_verify' => TRUE,
+      'require_sms_code_verify_on_change' => TRUE,
       'sms_code_verify_not_displayed_forms' => '',
-      'sms_code_verify_required_on_phone_changes_forms' => '',
+      'sms_code_verify_required_on_phone_changes_forms' => "user_profile_form",
     ) + parent::defaultSettings();
   }
 

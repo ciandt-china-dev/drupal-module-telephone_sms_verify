@@ -10,27 +10,10 @@
 function telephone_sms_verify_field_widget_info() {
   return array(
     'telephone_sms_verify' => array(
-      'label' => t('Telephone number with SMS verification'),
-      'settings' => array(
-        'widget' => TRUE,
-        'placeholder' => t('Phone Number'),
-        'captcha' => TRUE,
-        'captcha_type' => 'default',
-        'sms_template' => \Drupal::config('telephone_sms_verify.settings')->get('telephone_sms_verify_sms_template'),
-        'sms_code_expire' => \Drupal::config('telephone_sms_verify.settings')->get('telephone_sms_verify_sms_code_expire'),
-        'sms_code_length' => \Drupal::config('telephone_sms_verify.settings')->get('telephone_sms_verify_sms_code_length'),
-        'sms_code_count_down' => \Drupal::config('telephone_sms_verify.settings')->get('telephone_sms_verify_sms_code_count_down'),
-        'sms_code_max_request' => \Drupal::config('telephone_sms_verify.settings')->get('telephone_sms_verify_sms_code_max_request'),
-        'display_sms_code_verify' => TRUE,
-        'require_sms_code_verify_on_change' => TRUE,
-        'sms_code_verify_not_displayed_forms' => '',
-        'sms_code_verify_required_on_phone_changes_forms' => "user_profile_form",
-      ),
       'behaviors' => array(
         'multiple values' => FIELD_BEHAVIOR_DEFAULT,
         'default value' => FIELD_BEHAVIOR_DEFAULT,
       ),
-      'field types' => array('telephone'),
     ),
   );
 }
