@@ -358,9 +358,7 @@ function _telephone_sms_verify_explode_multi_lines($lines) {
   return explode("\n", str_replace("\r", "", $lines));
 }
 
-function _telephone_sms_verify_format_default_value($current, $default = '') {
-  return isset($current) ? $current : $default;
-}
+
 
 /**
  * Implements hook_element_info().
@@ -558,26 +556,6 @@ function _telephone_sms_verify_element_expand($element, &$form_state, $complete_
   }
 
   return $element;
-}
-
-function _telephone_sms_verify_get_element_by_array_path($arr, $path) {
-  if (!$path) {
-    return NULL;
-  }
-
-  $segments = is_array($path) ? $path : explode('/', $path);
-
-  $cur =& $arr;
-
-  foreach ($segments as $segment) {
-    if (!isset($cur[$segment])) {
-      return NULL;
-    }
-
-    $cur = $cur[$segment];
-  }
-
-  return $cur;
 }
 
 /**
