@@ -115,7 +115,7 @@ class TelephoneSmsVerifyElement extends FormElement {
 //    $settings['display_sms_code_verify'] &= !\Drupal::currentUser()
 //      ->hasPermission('bypass telephone sms verify');
 
-    $settings['display_sms_code_verify'] = true;
+    $settings['display_sms_code_verify'] = TRUE;
     // Give user a chance finally alter the sms code verify element behavior
     $context = array(
       'element' => $element,
@@ -171,21 +171,14 @@ class TelephoneSmsVerifyElement extends FormElement {
         '#weight' => 2,
         '#prefix' => '<div id="' . $id_prefix . '-send-smscode-btn-wrapper"><div id="' . $id_prefix . '-send-smscode-btn">',
         '#suffix' => '</div><div id="' . $id_prefix . '-send-smscode-count-down"></div></div></div>',
-#        '#attached' => array(
-#          'js' => array(
-#            drupal_get_path('module', 'telephone_sms_verify') . '/telephone_sms_verify.js',
-#            array(
-#              'data' => array('smscode_count_down' => $settings['sms_code_count_down']),
-#              'type' => 'setting'
-#            ),
-#          ),
-#        ),
         '#limit_validation_errors' => array(
           // Validate only the phone number field on AJAX call
           array_merge($element['#array_parents'], array('value')),
         ),
         '#submit' => array(),
       );
+      $element['send_smscode']['#attached']['library'][] = 'telephone_sms_verify/telephone_sms_verify.smscode_count_down';
+      $element['send_smscode']['#attached']['drupalSettings']['smscode_count_down'] = $settings['sms_code_count_down'];
     }
 
     return $element;
@@ -203,7 +196,7 @@ class TelephoneSmsVerifyElement extends FormElement {
     $settings = $parent_element['#settings'];
     $phone_number = TelephoneSmsVerifyElement::formatValue($parent_element['#value']);
     //todo temp
-    $settings['widget'] = true;
+    $settings['widget'] = TRUE;
     if ($settings['widget']) {
       $phone_number = $phone_number['value'];
     }
@@ -402,7 +395,14 @@ class TelephoneSmsVerifyElement extends FormElement {
    */
   public static function preRenderTel($element) {
     $element['#attributes']['type'] = 'telephone_with_sms_verify';
-    Element::setAttributes($element, array('id', 'name', 'value', 'size', 'maxlength', 'placeholder'));
+    Element::setAttributes($element, array(
+      'id',
+      'name',
+      'value',
+      'size',
+      'maxlength',
+      'placeholder'
+    ));
     static::setAttributes($element, array('form-tel'));
 
     return $element;

@@ -1,9 +1,6 @@
-js_example.weights:
-  # Add js files.
+telephone_sms_verify.smscode_count_down:
   js:
-    # weight is used as example attribute, but please avoid it and instead use
-    # dependencies for order loading.
-    js/telephone_sms_verify.js: { weight: -4 }
+    js/telephone_sms_verify.js: {}
   dependencies:
     - core/jquery
     - core/drupalSettings
