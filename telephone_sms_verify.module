@@ -87,7 +87,7 @@ function telephone_sms_verify_field_widget_settings_form($field, $instance) {
   $element['placeholder'] = array(
     '#type' => 'textfield',
     '#title' => t('Placeholder'),
-    '#access' => module_exists('elements') || module_exists('placeholder'),
+    '#access' => \Drupal::moduleHandler()->moduleExists('elements') || \Drupal::moduleHandler()->moduleExists('placeholder'),
     '#description' => t('The placeholder is a short hint (a word or short phrase) intended to aid the user with data entry. A hint could be a sample value or a brief description of the expected format.'),
     '#default_value' => $settings['placeholder'],
   );
@@ -192,7 +192,7 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
 
   $id_prefix = implode('-', preg_replace('$_$', '-', $parent_element['#array_parents']));
 
-  if ($settings['captcha'] && module_exists('captcha')) {
+  if ($settings['captcha'] && \Drupal::moduleHandler()->moduleExists('captcha')) {
     if ($form_state['triggering_element']['#name'] == $id_prefix . '-send-smscode-btn-op' || isset($parent_element['smscode_captcha']['container']) && form_get_error($parent_element['smscode_captcha']['container']['captcha']['captcha_widgets']['captcha_response'])) {
       // Clear all messages errors
       $commands[] = ajax_command_remove('#messages');
@@ -399,7 +399,7 @@ function _telephone_sms_verify_element_expand($element, &$form_state, $complete_
   $id_prefix = implode('-', preg_replace('$_$', '-', $element['#array_parents']));
 
   $element['value'] = array(
-    '#type' => module_exists('elements') ? 'telfield' : 'textfield',
+    '#type' => \Drupal::moduleHandler()->moduleExists('elements') ? 'telfield' : 'textfield',
     '#title' => $element['#title'],
     '#required' => $element['#required'],
     '#maxlength' => isset($element['#maxlength']) ? $element['#maxlength'] : 11,
@@ -422,7 +422,7 @@ function _telephone_sms_verify_element_expand($element, &$form_state, $complete_
       '#prefix' => '<div id="' . $id_prefix . '-captcha-wrapper">',
       '#suffix' => '</div>',
     );
-    if ($settings['captcha'] && module_exists('captcha') && $_GET['q'] == 'system/ajax' &&
+    if ($settings['captcha'] && \Drupal::moduleHandler()->moduleExists('captcha') && $_GET['q'] == 'system/ajax' &&
       (
         // We need captcha to be presented in the ajax form rebuild stage, but not when the captcha verify button is clicked, because next step is to submit the entire form, and we do not want to validate the capture element in this step.
         $form_state['rebuild'] == TRUE && $form_state['triggering_element']['#name'] != $id_prefix . '-captcha-verify-op' ||
@@ -467,7 +467,7 @@ function _telephone_sms_verify_element_expand($element, &$form_state, $complete_
         '#captcha_type' => $settings['captcha_type'],
       );
 
-      if (module_exists('image_captcha_refresh')) {
+      if (\Drupal::moduleHandler()->moduleExists('image_captcha_refresh')) {
         $element['smscode_captcha']['container']['captcha']['#after_build'][] = '_telephone_sms_verify_image_captcha_refresh_after_build_process';
         $element['smscode_captcha']['container']['captcha']['#attached']['js'][] = drupal_get_path('module', 'image_captcha_refresh') . '/image_captcha_refresh.js';
       }
