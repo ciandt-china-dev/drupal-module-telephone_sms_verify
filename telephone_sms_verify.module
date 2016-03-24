@@ -182,7 +182,16 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
     // Clear all messages errors
     $commands[] = ajax_command_remove('#messages');
     // Show error messages before the AJAX wrapper element
-    $commands[] = ajax_command_before(NULL, theme('status_messages'));
+    // @FIXME
+    // theme() has been renamed to _theme() and should NEVER be called directly.
+    // Calling _theme() directly can alter the expected output and potentially
+    // introduce security issues (see https://www.drupal.org/node/2195739). You
+    // should use renderable arrays instead.
+    // 
+    // 
+    // @see https://www.drupal.org/node/2195739
+    $commands[] = ajax_command_before(NULL, \Drupal::service("renderer")->render(array('#type' => 'status_messages')));
+
     // Update the AJAX wrapper element
     $commands[] = ajax_command_replace(NULL, \Drupal::service("renderer")->render($parent_element['value']));
     return array('#type' => 'ajax', '#commands' => $commands);
@@ -197,7 +206,16 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
       $commands[] = ajax_command_replace(NULL, \Drupal::service("renderer")->render($parent_element['value']));
       $commands[] = ajax_command_replace('#' . $id_prefix . '-captcha-wrapper', \Drupal::service("renderer")->render($parent_element['smscode_captcha']));
       // Show error messages before the AJAX wrapper element
-      $commands[] = ajax_command_after('.' . $id_prefix . '-smscode-captcha-container .form-item-captcha-response', theme('status_messages'));
+      // @FIXME
+      // theme() has been renamed to _theme() and should NEVER be called directly.
+      // Calling _theme() directly can alter the expected output and potentially
+      // introduce security issues (see https://www.drupal.org/node/2195739). You
+      // should use renderable arrays instead.
+      // 
+      // 
+      // @see https://www.drupal.org/node/2195739
+      $commands[] = ajax_command_after('.' . $id_prefix . '-smscode-captcha-container .form-item-captcha-response', \Drupal::service("renderer")->render(array('#type' => 'status_messages')));
+
       return array('#type' => 'ajax', '#commands' => $commands);
     }
     else {
@@ -563,8 +581,16 @@ function _telephone_sms_verify_get_element_by_array_path($arr, $path) {
 function _telephone_sms_verify_image_captcha_refresh_after_build_process($element, $form_state) {
   $form_id = $element['#captcha_info']['form_id'];
   if (isset($element['captcha_widgets']['captcha_image'])) {
+    // @FIXME
+    // theme() has been renamed to _theme() and should NEVER be called directly.
+    // Calling _theme() directly can alter the expected output and potentially
+    // introduce security issues (see https://www.drupal.org/node/2195739). You
+    // should use renderable arrays instead.
+    // 
+    // 
+    // @see https://www.drupal.org/node/2195739
     $element['captcha_widgets']['captcha_refresh'] = array(
-      '#markup' => theme('image_captcha_refresh_link', array('url' => 'captcha/refresh/' . $form_id)),
+      '#markup' => \Drupal::service("renderer")->render(array('#theme' => 'image_captcha_refresh_link', '#url' => 'captcha/refresh/' . $form_id)),
     );
   }
   return $element;
