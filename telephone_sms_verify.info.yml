@@ -1,7 +1,9 @@
 name: Telephone SMS Verify
 core: 8.x
 type: module
+package: Field types
 description: Verify telephone number with SMS
 dependencies:
   - telephone
   - sms
+  - field
