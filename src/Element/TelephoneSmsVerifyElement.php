@@ -165,7 +165,7 @@ class TelephoneSmsVerifyElement extends FormElement {
         '#type' => 'button',
         '#ajax' => array(
           'wrapper' => $id_prefix . '-value-wrapper',
-          'callback' => 'Drupal\telephone_sms_verify\Render\Element\TelephoneSmsVerifyElement::ajaxCallback',
+          'callback' => 'Drupal\telephone_sms_verify\Element\TelephoneSmsVerifyElement::ajaxCallback',
         ),
         '#value' => t('Send SMS Code'),
         '#weight' => 2,
@@ -192,16 +192,18 @@ class TelephoneSmsVerifyElement extends FormElement {
   }
 
   public static function ajaxCallback($form, FormStateInterface $form_state) {
-    if (preg_match('/captcha-verify-op$/', $form_state['triggering_element']['#name'])) {
-      $path = implode('/', array_slice($form_state['triggering_element']['#array_parents'], 0, -3));
+    if (preg_match('/captcha-verify-op$/', $form_state->getTriggeringElement()['#name'])) {
+      $path = implode('/', array_slice($form_state->getTriggeringElement()['#array_parents'], 0, -3));
     }
     else {
-      $path = implode('/', array_slice($form_state['triggering_element']['#array_parents'], 0, -1));
+      $path = implode('/', array_slice($form_state->getTriggeringElement()['#array_parents'], 0, -1));
     }
     $parent_element = TelephoneSmsVerifyElement::getElementByArrayPath($form, $path);
 
     $settings = $parent_element['#settings'];
     $phone_number = TelephoneSmsVerifyElement::formatValue($parent_element['#value']);
+    //todo temp
+    $settings['widget'] = true;
     if ($settings['widget']) {
       $phone_number = $phone_number['value'];
     }
@@ -233,7 +235,7 @@ class TelephoneSmsVerifyElement extends FormElement {
     $id_prefix = implode('-', preg_replace('$_$', '-', $parent_element['#array_parents']));
 
 //Compute session key
-    $form_id = $form_state['values']['form_id'];
+    $form_id = $form_state->getValue('form_id');
     $session_key = md5($form_id . $phone_number);
 
     $expire = $settings['sms_code_expire'];
