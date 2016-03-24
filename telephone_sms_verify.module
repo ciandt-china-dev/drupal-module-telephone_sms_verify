@@ -7,18 +7,6 @@
 define('DEFAULT_VERIFICATION_MESSAGE_TEMPLATE', 'Your SMS verification code is [phone_sms_verify:verify_code]. This code will be expired in [phone_sms_verify:expire_time] minutes.');
 
 /**
- * Implements hook_permission().
- */
-function telephone_sms_verify_permission() {
-  return array(
-    'bypass telephone sms verify' =>  array(
-      'title' => t('Bypass telephone sms code verification'),
-      'restrict access' => TRUE,
-    ),
-  );
-}
-
-/**
  * Implements hook_field_widget_info().
  */
 function telephone_sms_verify_field_widget_info() {

@@ -1,0 +1,3 @@
+bypass telephone sms verify:
+  title: 'Bypass telephone sms code verification'
+  restrict access: 1
