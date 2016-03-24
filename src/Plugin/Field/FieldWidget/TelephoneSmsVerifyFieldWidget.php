@@ -61,11 +61,12 @@ class TelephoneSmsVerifyFieldWidget extends WidgetBase {
     $element['sms_template'] = array(
       '#type' => 'textarea',
       '#title' => $this->t('SMS Template'),
-      '#description' => $this->t('The SMS template to send to the user.') . '<br />' . $this->t('This field supports tokens.'),
+      '#description' => $this->t('The SMS template to send to the user.'),
       '#default_value' => $this->getSetting('sms_template'),
     );
 
 /*
+    $element['sms_template']['#description'] .= '<br />' . $this->t('This field supports tokens.')
     $element['sms_template_tokens'] = array(
      '#theme' => 'token_tree',
      '#dialog' => TRUE,
@@ -126,7 +127,6 @@ class TelephoneSmsVerifyFieldWidget extends WidgetBase {
       '#description' => $this->t('Form IDs that only requires SMS code verification if the phone number has changed. Fill with a drupal form id in each line.'),
       '#default_value' => $this->getSetting('sms_code_verify_required_on_phone_changes_forms'),
     );
-
 
     return $element;
   }
