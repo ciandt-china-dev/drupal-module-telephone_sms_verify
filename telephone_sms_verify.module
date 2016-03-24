@@ -6,23 +6,16 @@
 
 define('DEFAULT_VERIFICATION_MESSAGE_TEMPLATE', 'Your SMS verification code is [phone_sms_verify:verify_code]. This code will be expired in [phone_sms_verify:expire_time] minutes.');
 
-/**
- * Implements hook_permission().
- */
-function telephone_sms_verify_permission() {
-  return array(
-    'bypass telephone sms verify' =>  array(
-      'title' => t('Bypass telephone sms code verification'),
-      'restrict access' => TRUE,
-    ),
-  );
-}
 
 /**
  * Implements hook_field_widget_info().
  */
 function telephone_sms_verify_field_widget_info() {
-  return array(
+  // @FIXME
+// Could not extract the default value because it is either indeterminate, or
+// not scalar. You'll need to provide a default value in
+// config/install/telephone_sms_verify.settings.yml and config/schema/telephone_sms_verify.schema.yml.
+return array(
     'telephone_sms_verify' => array(
       'label' => t('Telephone number with SMS verification'),
       'settings' => array(
@@ -30,11 +23,11 @@ function telephone_sms_verify_field_widget_info() {
         'placeholder' => t('Phone Number'),
         'captcha' => TRUE,
         'captcha_type' => 'default',
-        'sms_template' => variable_get('telephone_sms_verify_sms_template', t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE)),
-        'sms_code_expire' => variable_get('telephone_sms_verify_sms_code_expire', 30),
-        'sms_code_length' => variable_get('telephone_sms_verify_sms_code_length', 6),
-        'sms_code_count_down' => variable_get('telephone_sms_verify_sms_code_count_down', 30),
-        'sms_code_max_request' => variable_get('telephone_sms_verify_sms_code_max_request', 3),
+        'sms_template' => \Drupal::config('telephone_sms_verify.settings')->get('telephone_sms_verify_sms_template'),
+        'sms_code_expire' => \Drupal::config('telephone_sms_verify.settings')->get('telephone_sms_verify_sms_code_expire'),
+        'sms_code_length' => \Drupal::config('telephone_sms_verify.settings')->get('telephone_sms_verify_sms_code_length'),
+        'sms_code_count_down' => \Drupal::config('telephone_sms_verify.settings')->get('telephone_sms_verify_sms_code_count_down'),
+        'sms_code_max_request' => \Drupal::config('telephone_sms_verify.settings')->get('telephone_sms_verify_sms_code_max_request'),
         'display_sms_code_verify' => TRUE,
         'require_sms_code_verify_on_change' => TRUE,
         'sms_code_verify_not_displayed_forms' => '',
@@ -99,7 +92,7 @@ function telephone_sms_verify_field_widget_settings_form($field, $instance) {
   $element['placeholder'] = array(
     '#type' => 'textfield',
     '#title' => t('Placeholder'),
-    '#access' => module_exists('elements') || module_exists('placeholder'),
+    '#access' => \Drupal::moduleHandler()->moduleExists('elements') || \Drupal::moduleHandler()->moduleExists('placeholder'),
     '#description' => t('The placeholder is a short hint (a word or short phrase) intended to aid the user with data entry. A hint could be a sample value or a brief description of the expected format.'),
     '#default_value' => $settings['placeholder'],
   );
@@ -196,22 +189,40 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
     // Clear all messages errors
     $commands[] = ajax_command_remove('#messages');
     // Show error messages before the AJAX wrapper element
-    $commands[] = ajax_command_before(NULL, theme('status_messages'));
+    // @FIXME
+// theme() has been renamed to _theme() and should NEVER be called directly.
+// Calling _theme() directly can alter the expected output and potentially
+// introduce security issues (see https://www.drupal.org/node/2195739). You
+// should use renderable arrays instead.
+// 
+// 
+// @see https://www.drupal.org/node/2195739
+// $commands[] = ajax_command_before(NULL, theme('status_messages'));
+
     // Update the AJAX wrapper element
-    $commands[] = ajax_command_replace(NULL, drupal_render($parent_element['value']));
+    $commands[] = ajax_command_replace(NULL, \Drupal::service("renderer")->render($parent_element['value']));
     return array('#type' => 'ajax', '#commands' => $commands);
   }
 
   $id_prefix = implode('-', preg_replace('$_$', '-', $parent_element['#array_parents']));
 
-  if ($settings['captcha'] && module_exists('captcha')) {
+  if ($settings['captcha'] && \Drupal::moduleHandler()->moduleExists('captcha')) {
     if ($form_state['triggering_element']['#name'] == $id_prefix . '-send-smscode-btn-op' || isset($parent_element['smscode_captcha']['container']) && form_get_error($parent_element['smscode_captcha']['container']['captcha']['captcha_widgets']['captcha_response'])) {
       // Clear all messages errors
       $commands[] = ajax_command_remove('#messages');
-      $commands[] = ajax_command_replace(NULL, drupal_render($parent_element['value']));
-      $commands[] = ajax_command_replace('#' . $id_prefix . '-captcha-wrapper', drupal_render($parent_element['smscode_captcha']));
+      $commands[] = ajax_command_replace(NULL, \Drupal::service("renderer")->render($parent_element['value']));
+      $commands[] = ajax_command_replace('#' . $id_prefix . '-captcha-wrapper', \Drupal::service("renderer")->render($parent_element['smscode_captcha']));
       // Show error messages before the AJAX wrapper element
-      $commands[] = ajax_command_after('.' . $id_prefix . '-smscode-captcha-container .form-item-captcha-response', theme('status_messages'));
+      // @FIXME
+// theme() has been renamed to _theme() and should NEVER be called directly.
+// Calling _theme() directly can alter the expected output and potentially
+// introduce security issues (see https://www.drupal.org/node/2195739). You
+// should use renderable arrays instead.
+// 
+// 
+// @see https://www.drupal.org/node/2195739
+// $commands[] = ajax_command_after('.' . $id_prefix . '-smscode-captcha-container .form-item-captcha-response', theme('status_messages'));
+
       return array('#type' => 'ajax', '#commands' => $commands);
     }
     else {
@@ -245,7 +256,7 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
     $template = t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE);
   }
 
-  $template = token_replace($template, array(
+  $template = \Drupal::token()->replace($template, array(
     'phone_sms_verify' => array(
       'verify_code' => $_SESSION[$session_key]['code'],
       'expire_time' => $expire
@@ -258,7 +269,7 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   // Clear all messages errors
   $commands[] = ajax_command_remove('#messages');
   // Update the AJAX wrapper element
-  $commands[] = ajax_command_replace(NULL, drupal_render($parent_element['value']));
+  $commands[] = ajax_command_replace(NULL, \Drupal::service("renderer")->render($parent_element['value']));
   // Trigger javascript messages send countdown
   $commands[] = ajax_command_invoke(NULL, 'DrupalTelephoneSMSVerifyCountDown', array(
     '#' . $id_prefix . '-send-smscode-btn',
@@ -269,7 +280,7 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
 }
 
 function telephone_sms_verify_validate($element, &$form_state, $form) {
-  form_set_value($element, $element['#value'], $form_state);
+  $form_state->setValueForElement($element, $element['#value']);
 }
 
 function telephone_sms_verify_value_validate($element, &$form_state, $form) {
@@ -355,7 +366,11 @@ function _telephone_sms_verify_format_default_value($current, $default = '') {
  * Implements hook_element_info().
  */
 function telephone_sms_verify_element_info() {
-  $type['telephone_with_sms_verify'] = array(
+  // @FIXME
+// Could not extract the default value because it is either indeterminate, or
+// not scalar. You'll need to provide a default value in
+// config/install/telephone_sms_verify.settings.yml and config/schema/telephone_sms_verify.schema.yml.
+$type['telephone_with_sms_verify'] = array(
     '#tree' => TRUE,
     '#input' => TRUE,
     '#required' => FALSE,
@@ -368,11 +383,11 @@ function telephone_sms_verify_element_info() {
       'placeholder' => t('Phone Number'),
       'captcha' => TRUE,
       'captcha_type' => 'default',
-      'sms_template' => variable_get('telephone_sms_verify_sms_template', t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE)),
-      'sms_code_expire' => variable_get('telephone_sms_verify_sms_code_expire', 30),
-      'sms_code_length' => variable_get('telephone_sms_verify_sms_code_length', 6),
-      'sms_code_count_down' => variable_get('telephone_sms_verify_sms_code_count_down', 30),
-      'sms_code_max_request' => variable_get('telephone_sms_verify_sms_code_max_request', 3),
+      'sms_template' => \Drupal::config('telephone_sms_verify.settings')->get('telephone_sms_verify_sms_template'),
+      'sms_code_expire' => \Drupal::config('telephone_sms_verify.settings')->get('telephone_sms_verify_sms_code_expire'),
+      'sms_code_length' => \Drupal::config('telephone_sms_verify.settings')->get('telephone_sms_verify_sms_code_length'),
+      'sms_code_count_down' => \Drupal::config('telephone_sms_verify.settings')->get('telephone_sms_verify_sms_code_count_down'),
+      'sms_code_max_request' => \Drupal::config('telephone_sms_verify.settings')->get('telephone_sms_verify_sms_code_max_request'),
       'display_sms_code_verify' => TRUE,
       'require_sms_code_verify_on_change' => TRUE,
     ),
@@ -398,7 +413,7 @@ function _telephone_sms_verify_element_expand($element, &$form_state, $complete_
   $element['#settings'] += $element['#default_settings'];
   $settings = $element['#settings'];
 
-  $settings['display_sms_code_verify'] &= !user_access('bypass telephone sms verify');
+  $settings['display_sms_code_verify'] &= !\Drupal::currentUser()->hasPermission('bypass telephone sms verify');
 
   // Give user a chance finally alter the sms code verify element behavior
   $context = array(
@@ -406,12 +421,12 @@ function _telephone_sms_verify_element_expand($element, &$form_state, $complete_
     'form' => $complete_form,
     'form_state' => $form_state,
   );
-  drupal_alter('sms_code_verify_element_settings', $settings, $context);
+  \Drupal::moduleHandler()->alter('sms_code_verify_element_settings', $settings, $context);
 
   $id_prefix = implode('-', preg_replace('$_$', '-', $element['#array_parents']));
 
   $element['value'] = array(
-    '#type' => module_exists('elements') ? 'telfield' : 'textfield',
+    '#type' => \Drupal::moduleHandler()->moduleExists('elements') ? 'telfield' : 'textfield',
     '#title' => $element['#title'],
     '#required' => $element['#required'],
     '#maxlength' => isset($element['#maxlength']) ? $element['#maxlength'] : 11,
@@ -434,7 +449,7 @@ function _telephone_sms_verify_element_expand($element, &$form_state, $complete_
       '#prefix' => '<div id="' . $id_prefix . '-captcha-wrapper">',
       '#suffix' => '</div>',
     );
-    if ($settings['captcha'] && module_exists('captcha') && $_GET['q'] == 'system/ajax' &&
+    if ($settings['captcha'] && \Drupal::moduleHandler()->moduleExists('captcha') && $_GET['q'] == 'system/ajax' &&
       (
         // We need captcha to be presented in the ajax form rebuild stage, but not when the captcha verify button is clicked, because next step is to submit the entire form, and we do not want to validate the capture element in this step.
         $form_state['rebuild'] == TRUE && $form_state['triggering_element']['#name'] != $id_prefix . '-captcha-verify-op' ||
@@ -479,7 +494,7 @@ function _telephone_sms_verify_element_expand($element, &$form_state, $complete_
         '#captcha_type' => $settings['captcha_type'],
       );
 
-      if (module_exists('image_captcha_refresh')) {
+      if (\Drupal::moduleHandler()->moduleExists('image_captcha_refresh')) {
         $element['smscode_captcha']['container']['captcha']['#after_build'][] = '_telephone_sms_verify_image_captcha_refresh_after_build_process';
         $element['smscode_captcha']['container']['captcha']['#attached']['js'][] = drupal_get_path('module', 'image_captcha_refresh') . '/image_captcha_refresh.js';
       }
@@ -577,9 +592,18 @@ function _telephone_sms_verify_get_element_by_array_path($arr, $path) {
 function _telephone_sms_verify_image_captcha_refresh_after_build_process($element, $form_state) {
   $form_id = $element['#captcha_info']['form_id'];
   if (isset($element['captcha_widgets']['captcha_image'])) {
-    $element['captcha_widgets']['captcha_refresh'] = array(
-      '#markup' => theme('image_captcha_refresh_link', array('url' => 'captcha/refresh/' . $form_id)),
-    );
+    // @FIXME
+// theme() has been renamed to _theme() and should NEVER be called directly.
+// Calling _theme() directly can alter the expected output and potentially
+// introduce security issues (see https://www.drupal.org/node/2195739). You
+// should use renderable arrays instead.
+// 
+// 
+// @see https://www.drupal.org/node/2195739
+// $element['captcha_widgets']['captcha_refresh'] = array(
+//       '#markup' => theme('image_captcha_refresh_link', array('url' => 'captcha/refresh/' . $form_id)),
+//     );
+
   }
   return $element;
 }

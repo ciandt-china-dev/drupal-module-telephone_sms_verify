@@ -1,5 +1,0 @@
-name = "Telephone SMS Verify"
-core = "7.x"
-description = "Verify telephone number with SMS"
-dependencies[] = telephone
-dependencies[] = sms

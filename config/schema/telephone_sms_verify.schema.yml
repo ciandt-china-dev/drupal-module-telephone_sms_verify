@@ -1,0 +1,12 @@
+telephone_sms_verify.settings:
+  type: mapping
+  label: Settings
+  mapping:
+    telephone_sms_verify_sms_code_expire:
+      type: integer
+    telephone_sms_verify_sms_code_length:
+      type: integer
+    telephone_sms_verify_sms_code_count_down:
+      type: integer
+    telephone_sms_verify_sms_code_max_request:
+      type: integer
