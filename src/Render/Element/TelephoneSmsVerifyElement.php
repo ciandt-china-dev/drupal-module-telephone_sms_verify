@@ -4,6 +4,7 @@ namespace Drupal\telephone_sms_verify\Render\Element;
 
 use  \Drupal\Core\Ajax\RemoveCommand;
 use \Drupal\Core\Ajax\ReplaceCommand;
+use \Drupal\Core\Ajax\InvokeCommand;
 use Drupal\Core\Render\Element\FormElement;
 use Drupal\Core\Form\FormStateInterface;
 
@@ -120,7 +121,10 @@ class TelephoneSmsVerifyElement extends FormElement {
         '#title' => t('SMS Code'),
         '#weight' => 1,
         '#prefix' => '<div id="' . $id_prefix . '-sms-verification-code-wrapper" class="sms-verification-code">',
-        '#element_validate' => array(get_called_class(),'validateSmsVerifyCode'),
+        '#element_validate' => array(
+          get_called_class(),
+          'validateSmsVerifyCode'
+        ),
         '#required' => $settings['require_sms_code_verify_on_change'],
       );
 
@@ -155,28 +159,29 @@ class TelephoneSmsVerifyElement extends FormElement {
     return $element;
   }
 
-  public static function ajaxCallback($form,FormStateInterface $form_state) {
-  if (preg_match('/captcha-verify-op$/', $form_state['triggering_element']['#name'])) {
-    $path = implode('/', array_slice($form_state['triggering_element']['#array_parents'], 0, -3));
-  } else {
-  $path = implode('/', array_slice($form_state['triggering_element']['#array_parents'], 0, -1));
-}
-$parent_element = TelephoneSmsVerifyElement::getElementByArrayPath($form, $path);
+  public static function ajaxCallback($form, FormStateInterface $form_state) {
+    if (preg_match('/captcha-verify-op$/', $form_state['triggering_element']['#name'])) {
+      $path = implode('/', array_slice($form_state['triggering_element']['#array_parents'], 0, -3));
+    }
+    else {
+      $path = implode('/', array_slice($form_state['triggering_element']['#array_parents'], 0, -1));
+    }
+    $parent_element = TelephoneSmsVerifyElement::getElementByArrayPath($form, $path);
 
-$settings = $parent_element['#settings'];
-$phone_number = TelephoneSmsVerifyElement::formatValue($parent_element['#value']);
-if ($settings['widget']) {
-  $phone_number = $phone_number['value'];
-}
+    $settings = $parent_element['#settings'];
+    $phone_number = TelephoneSmsVerifyElement::formatValue($parent_element['#value']);
+    if ($settings['widget']) {
+      $phone_number = $phone_number['value'];
+    }
 
-$commands = array();
+    $commands = array();
 
 // if there are errors on phone number element
-if (empty($phone_number) || $form_state->getError($parent_element['value'])) {
-  // Clear all messages errors
-  $commands[] = (new RemoveCommand('#messages'))->render();
-  // Show error messages before the AJAX wrapper element
-  // @FIXME
+    if (empty($phone_number) || $form_state->getError($parent_element['value'])) {
+      // Clear all messages errors
+      $commands[] = (new RemoveCommand('#messages'))->render();
+      // Show error messages before the AJAX wrapper element
+      // @FIXME
 // theme() has been renamed to _theme() and should NEVER be called directly.
 // Calling _theme() directly can alter the expected output and potentially
 // introduce security issues (see https://www.drupal.org/node/2195739). You
@@ -186,64 +191,69 @@ if (empty($phone_number) || $form_state->getError($parent_element['value'])) {
 // @see https://www.drupal.org/node/2195739
 // $commands[] = ajax_command_before(NULL, theme('status_messages'));
 
-  // Update the AJAX wrapper element
-  $replaceCommand=new ReplaceCommand(NULL, \Drupal::service("renderer")->render($parent_element['value']));
-  $commands[] = $replaceCommand->render();
-  return array('#type' => 'ajax', '#commands' => $commands);
-}
+      // Update the AJAX wrapper element
+      $replaceCommand = new ReplaceCommand(NULL, \Drupal::service("renderer")
+        ->render($parent_element['value']));
+      $commands[] = $replaceCommand->render();
+      return array('#type' => 'ajax', '#commands' => $commands);
+    }
 
-$id_prefix = implode('-', preg_replace('$_$', '-', $parent_element['#array_parents']));
+    $id_prefix = implode('-', preg_replace('$_$', '-', $parent_element['#array_parents']));
 
 //Compute session key
-$form_id = $form_state['values']['form_id'];
-$session_key = md5($form_id . $phone_number);
+    $form_id = $form_state['values']['form_id'];
+    $session_key = md5($form_id . $phone_number);
 
-$expire = $settings['sms_code_expire'];
-$length = $settings['sms_code_length'];
-$max_request = $settings['sms_code_max_request'];
+    $expire = $settings['sms_code_expire'];
+    $length = $settings['sms_code_length'];
+    $max_request = $settings['sms_code_max_request'];
 
 // Generate SMS verification code if not set or has expired
-if (!isset($_SESSION[$session_key]) || $_SESSION[$session_key]['time'] + 60 * $expire < time()) {
-  $_SESSION[$session_key]['code'] = sprintf('%0' . $length . 'd', rand(0, (int) str_repeat('9', $length)));
-  $_SESSION[$session_key]['time'] = time();
-  $_SESSION[$session_key]['count'] = 0;
-}
-elseif ($_SESSION[$session_key]['count'] < $max_request) {
-  $_SESSION[$session_key]['count'] += 1;
-}
+    if (!isset($_SESSION[$session_key]) || $_SESSION[$session_key]['time'] + 60 * $expire < time()) {
+      $_SESSION[$session_key]['code'] = sprintf('%0' . $length . 'd', rand(0, (int) str_repeat('9', $length)));
+      $_SESSION[$session_key]['time'] = time();
+      $_SESSION[$session_key]['count'] = 0;
+    }
+    elseif ($_SESSION[$session_key]['count'] < $max_request) {
+      $_SESSION[$session_key]['count'] += 1;
+    }
 
 // Get SMS verification template from field widget settings
-$template = $settings['sms_template'];
+    $template = $settings['sms_template'];
 
 // Set default value is no template is configured
-if (empty($template)) {
-  $template = t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE);
-}
+    if (empty($template)) {
+      $template = t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE);
+    }
 
-$template = \Drupal::token()->replace($template, array(
-  'phone_sms_verify' => array(
-    'verify_code' => $_SESSION[$session_key]['code'],
-    'expire_time' => $expire
-  )
-));
+    $template = \Drupal::token()->replace($template, array(
+      'phone_sms_verify' => array(
+        'verify_code' => $_SESSION[$session_key]['code'],
+        'expire_time' => $expire
+      )
+    ));
 
 // Send SMS verification code using SMS Framework
-sms_send($phone_number, $template);
+    sms_send($phone_number, $template);
 
 // Clear all messages errors
-$commands[] = ajax_command_remove('#messages');
+    $removeCommand = new RemoveCommand('#messages');
+    $commands[] = $removeCommand->render();
 // Update the AJAX wrapper element
-$commands[] = ajax_command_replace(NULL, \Drupal::service("renderer")->render($parent_element['value']));
+    $replaceCommand = new ReplaceCommand(NULL, \Drupal::service("renderer")
+      ->render($parent_element['value']));
+    $commands[] = $replaceCommand->render();
 // Trigger javascript messages send countdown
-$commands[] = ajax_command_invoke(NULL, 'DrupalTelephoneSMSVerifyCountDown', array(
-  '#' . $id_prefix . '-send-smscode-btn',
-  '#' . $id_prefix . '-send-smscode-count-down'
-));
+    $invokeCommand = new InvokeCommand(NULL, 'DrupalTelephoneSMSVerifyCountDown', array(
+      '#' . $id_prefix . '-send-smscode-btn',
+      '#' . $id_prefix . '-send-smscode-count-down'
+    ));
+    $commands[] = $invokeCommand->render();
 
-return array('#type' => 'ajax', '#commands' => $commands);
-}
+    return array('#type' => 'ajax', '#commands' => $commands);
+  }
 
-  public static function validateSmsVerifyCode(&$element, FormStateInterface &$form_state, &$form){
+  public static function validateSmsVerifyCode(&$element, FormStateInterface &$form_state, &$form) {
     $path = implode('/', array_slice($element['#array_parents'], 0, -1));
 
     $parent_element = TelephoneSmsVerifyElement::getElementByArrayPath($form, $path);
@@ -304,13 +314,13 @@ return array('#type' => 'ajax', '#commands' => $commands);
 
     $expire = $settings['sms_code_expire'];
 
-    //Compute session key
+//Compute session key
     $form_id = $form_state['values']['form_id'];
     $session_key = md5($form_id . $phone_number);
 
     $max_request = $settings['sms_code_max_request'];
 
-    // Do not send sms verification code on account editing page and the phone number is not changed
+// Do not send sms verification code on account editing page and the phone number is not changed
     if ($settings['display_sms_code_verify'] && $settings['require_sms_code_verify_on_change'] && $phone_number == $phone_number_default) {
       $form_state->setError($element, t('Your phone number has not changed, no SMS verification code is sent.'));
     }
