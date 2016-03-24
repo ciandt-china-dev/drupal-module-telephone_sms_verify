@@ -32,7 +32,7 @@ class TelephoneSmsVerifyFieldWidget extends WidgetBase {
       'placeholder' => t('Phone Number'),
       'captcha' => TRUE,
       'captcha_type' => 'default',
-      'sms_template' => \Drupal::config('telephone_sms_verify.settings')->get('telephone_sms_verify_sms_template'),
+      'sms_template' => t('Your SMS verification code is [phone_sms_verify:verify_code]. This code will be expired in [phone_sms_verify:expire_time] minutes.'),
       'sms_code_expire' => \Drupal::config('telephone_sms_verify.settings')->get('telephone_sms_verify_sms_code_expire'),
       'sms_code_length' => \Drupal::config('telephone_sms_verify.settings')->get('telephone_sms_verify_sms_code_length'),
       'sms_code_count_down' => \Drupal::config('telephone_sms_verify.settings')->get('telephone_sms_verify_sms_code_count_down'),
