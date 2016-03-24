@@ -1,0 +1,9 @@
+js_example.weights:
+  # Add js files.
+  js:
+    # weight is used as example attribute, but please avoid it and instead use
+    # dependencies for order loading.
+    js/telephone_sms_verify.js: { weight: -4 }
+  dependencies:
+    - core/jquery
+    - core/drupalSettings
