@@ -1,3 +1,4 @@
+telephone_sms_verify_sms_template: 'Your SMS verification code is [phone_sms_verify:verify_code]. This code will be expired in [phone_sms_verify:expire_time] minutes.'
 telephone_sms_verify_sms_code_expire: 30
 telephone_sms_verify_sms_code_length: 6
 telephone_sms_verify_sms_code_count_down: 30
