@@ -3,7 +3,7 @@
  * Defines the behavior of the Telephone SMS Verify Count Down.
  */
 
-(function ($) {
+(function ($, Drupal, drupalSettings) {
   function smsCountDown(seconds, element, callback) {
     element.text(seconds + 's');
 
@@ -24,7 +24,7 @@
     $smsCodeBtn.hide();
     $countDownBtn.show();
 
-    smsCountDown(Drupal.settings.smscode_count_down, $countDownBtn, function() {
+    smsCountDown(drupalSettings.smscode_count_down, $countDownBtn, function() {
       $smsCodeBtn.show();
       $countDownBtn.hide();
     });
@@ -39,4 +39,4 @@
       });
     }
   }
-})(jQuery);
+})(jQuery, Drupal, drupalSettings);

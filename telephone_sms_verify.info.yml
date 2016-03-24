@@ -7,3 +7,6 @@ dependencies:
   - telephone
   - sms
   - field
+libraries:
+  - 'telephone_sms_verify.js'
+  - 'telephone_sms_verify.css'

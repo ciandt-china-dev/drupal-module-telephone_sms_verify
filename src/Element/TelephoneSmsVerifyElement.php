@@ -18,6 +18,10 @@ use Drupal\Core\Render\Element\FormElement;
 
 use Drupal\Core\Form\FormStateInterface;
 
+use Drupal\Core\Ajax\AjaxResponse;
+
+
+
 /**
  * Provides a form element for an HTML 'telephone_with_sms_verify' input element.
  *
@@ -40,13 +44,7 @@ use Drupal\Core\Form\FormStateInterface;
 class TelephoneSmsVerifyElement extends FormElement {
 
   /**
-   * Returns the element properties for this element.
-   *
-   * @return array
-   *   An array of element properties. See
-   *   \Drupal\Core\Render\ElementInfoManagerInterface::getInfo() for
-   *   documentation of the standard properties of all elements, and the
-   *   return value format.
+   * {@inheritdoc}
    */
   public function getInfo() {
     $class = get_class($this);
@@ -78,32 +76,9 @@ class TelephoneSmsVerifyElement extends FormElement {
         'require_sms_code_verify_on_change' => TRUE,
       ),
       '#value_callback' => array($class, 'valueCallback'),
-      '#element_validate' => array($class, 'validateElement'),
+      '#element_validate' => array(array($class, 'validateElement')),
     );
   }
-
-  /**
-   * {@inheritdoc}
-   */
-//  public function getInfo() {
-//    $class = get_class($this);
-//    return array(
-//      '#input' => TRUE,
-//      '#size' => 30,
-//      '#maxlength' => 128,
-//      '#autocomplete_route_name' => FALSE,
-//      '#process' => array(
-//        array($class, 'processAutocomplete'),
-//        array($class, 'processAjaxForm'),
-//        array($class, 'processPattern'),
-//      ),
-//      '#pre_render' => array(
-//        array($class, 'preRenderTel'),
-//      ),
-//      '#theme' => 'input__tel',
-//      '#theme_wrappers' => array('form_element'),
-//    );
-//  }
 
   public static function expandElement(&$element, FormStateInterface &$form_state, &$complete_form) {
     if (!isset($element['#settings'])) {
@@ -136,7 +111,7 @@ class TelephoneSmsVerifyElement extends FormElement {
       '#prefix' => '<div id="' . $id_prefix . '-value-wrapper">',
       '#suffix' => '</div>',
       '#placeholder' => $settings['placeholder'],
-      '#element_validate' => array(get_called_class(), 'validateElementValue'),
+      '#element_validate' => array(array(get_called_class(), 'validateElementValue')),
     );
 
     if (isset($complete_form['#form_placeholder'])) {
@@ -225,10 +200,7 @@ class TelephoneSmsVerifyElement extends FormElement {
         '#title' => t('SMS Code'),
         '#weight' => 1,
         '#prefix' => '<div id="' . $id_prefix . '-sms-verification-code-wrapper" class="sms-verification-code">',
-        '#element_validate' => array(
-          get_called_class(),
-          'validateSmsVerifyCode'
-        ),
+        '#element_validate' => array(array(get_called_class(), 'validateSmsVerifyCode')),
         '#required' => $settings['require_sms_code_verify_on_change'],
       );
 
@@ -243,18 +215,20 @@ class TelephoneSmsVerifyElement extends FormElement {
         '#weight' => 2,
         '#prefix' => '<div id="' . $id_prefix . '-send-smscode-btn-wrapper"><div id="' . $id_prefix . '-send-smscode-btn">',
         '#suffix' => '</div><div id="' . $id_prefix . '-send-smscode-count-down"></div></div></div>',
-        '#attached' => array(
-          'library' => array(
-            'telephone_sms_verify/js',
-          ),
-          'drupalSettings' => array('smscode_count_down' => $settings['sms_code_count_down']),
-        ),
+//        '#attached' => array(
+//          'library' => array(
+//            'telephone_sms_verify/js',
+//          ),
+//          'drupalSettings' => array('smscode_count_down' => $settings['sms_code_count_down']),
+//        ),
         '#limit_validation_errors' => array(
           // Validate only the phone number field on AJAX call
           array_merge($element['#array_parents'], array('value')),
         ),
         '#submit' => array(),
       );
+      $element['send_smscode']['#attached']['library'][] = 'telephone_sms_verify/telephone_sms_verify.js';
+      $element['send_smscode']['#attached']['drupalSettings']['smscode_count_down'] = $settings['sms_code_count_down'];
     }
 
     return $element;
@@ -270,6 +244,8 @@ class TelephoneSmsVerifyElement extends FormElement {
   }
 
   public static function ajaxCallback($form, FormStateInterface $form_state) {
+    $response = new AjaxResponse();
+
     if (preg_match('/captcha-verify-op$/', $form_state->getTriggeringElement()['#name'])) {
       $path = implode('/', array_slice($form_state->getTriggeringElement()['#array_parents'], 0, -3));
     }
@@ -290,7 +266,7 @@ class TelephoneSmsVerifyElement extends FormElement {
     if (empty($phone_number) || $form_state->getError($parent_element['value'])) {
       // Clear all messages errors
       $removeCommand = new RemoveCommand('#messages');
-      $commands[] = $removeCommand->render();
+      $response->addCommand($removeCommand);
 
       // Show error messages before the AJAX wrapper element
       // @FIXME
@@ -302,13 +278,13 @@ class TelephoneSmsVerifyElement extends FormElement {
       //
       // @see https://www.drupal.org/node/2195739
       $beforeCommand = new BeforeCommand(NULL, \Drupal::service("renderer")->render(array('#type' => 'status_messages')));
-      $commands[] = $beforeCommand->render();
+      $response->addCommand($beforeCommand);
 
       // Update the AJAX wrapper element
       $replaceCommand = new ReplaceCommand(NULL, \Drupal::service("renderer")->render($parent_element['value']));
-      $commands[] = $replaceCommand->render();
+      $response->addCommand($replaceCommand);
 
-      return array('#type' => 'ajax', '#commands' => $commands);
+      return $response;
     }
 
     $id_prefix = implode('-', preg_replace('$_$', '-', $parent_element['#array_parents']));
@@ -317,13 +293,13 @@ class TelephoneSmsVerifyElement extends FormElement {
       if ($form_state['triggering_element']['#name'] == $id_prefix . '-send-smscode-btn-op' || isset($parent_element['smscode_captcha']['container']) && form_get_error($parent_element['smscode_captcha']['container']['captcha']['captcha_widgets']['captcha_response'])) {
         // Clear all messages errors
         $removeCommand = new RemoveCommand('#messages');
-        $commands[] = $removeCommand->render();
+        $response->addCommand($removeCommand);
 
         $replaceCommand = new ReplaceCommand(NULL, \Drupal::service("renderer")->render($parent_element['value']));
-        $commands[] = $replaceCommand->render();
+        $response->addCommand($replaceCommand);
 
         $replaceCommand = new ReplaceCommand('#' . $id_prefix . '-captcha-wrapper', \Drupal::service("renderer")->render($parent_element['smscode_captcha']));
-        $commands[] = $replaceCommand->render();
+        $response->addCommand($replaceCommand);
 
         // Show error messages before the AJAX wrapper element
         // @FIXME
@@ -335,13 +311,13 @@ class TelephoneSmsVerifyElement extends FormElement {
         //
         // @see https://www.drupal.org/node/2195739
         $afterCommand = new AfterCommand('.' . $id_prefix . '-smscode-captcha-container .form-item-captcha-response', \Drupal::service("renderer")->render(array('#type' => 'status_messages')));
-        $commands[] = $afterCommand->render();
+        $response->addCommand($afterCommand);
 
-        return array('#type' => 'ajax', '#commands' => $commands);
+        return $response;
       }
       else {
         $replaceCommand = new ReplaceCommand('#' . $id_prefix . '-captcha-wrapper', '<div id="' . $id_prefix . '-captcha-wrapper"></div>');
-        $commands[] = $replaceCommand->render();
+        $response->addCommand($replaceCommand);
       }
     }
 
@@ -383,20 +359,20 @@ class TelephoneSmsVerifyElement extends FormElement {
 
     // Clear all messages errors
     $removeCommand = new RemoveCommand('#messages');
-    $commands[] = $removeCommand->render();
+    $response->addCommand($removeCommand);
 
     // Update the AJAX wrapper element
     $replaceCommand = new ReplaceCommand(NULL, \Drupal::service("renderer")->render($parent_element['value']));
-    $commands[] = $replaceCommand->render();
+    $response->addCommand($replaceCommand);
 
     // Trigger javascript messages send countdown
     $invokeCommand = new InvokeCommand(NULL, 'DrupalTelephoneSMSVerifyCountDown', array(
       '#' . $id_prefix . '-send-smscode-btn',
       '#' . $id_prefix . '-send-smscode-count-down'
     ));
-    $commands[] = $invokeCommand->render();
+    $response->addCommand($invokeCommand);
 
-    return array('#type' => 'ajax', '#commands' => $commands);
+    return $response;
   }
 
   public static function validateElement(&$element, FormStateInterface &$form_state, &$complete_form) {
@@ -406,7 +382,9 @@ class TelephoneSmsVerifyElement extends FormElement {
   public static function validateElementValue($element, FormStateInterface &$form_state, $form) {
     $path = implode('/', array_slice($element['#array_parents'], 0, -1));
     $parent_element = TelephoneSmsVerifyElement::getElementByArrayPath($form, $path);
-    $parent_element_state = TelephoneSmsVerifyElement::getElementByArrayPath($form_state['values'], $path);
+
+    $path = implode('/', array_slice($element['#parents'], 0, -1));
+    $parent_element_state = TelephoneSmsVerifyElement::getElementByArrayPath($form_state->getValues(), $path);
 
     $settings = $parent_element['#settings'];
     $phone_number = TelephoneSmsVerifyElement::formatValue($parent_element_state['value']);
@@ -418,7 +396,7 @@ class TelephoneSmsVerifyElement extends FormElement {
     $expire = $settings['sms_code_expire'];
 
     //Compute session key
-    $form_id = $form_state['values']['form_id'];
+    $form_id = $form_state->getValue('form_id');
     $session_key = md5($form_id . $phone_number);
 
     $max_request = $settings['sms_code_max_request'];
@@ -436,9 +414,10 @@ class TelephoneSmsVerifyElement extends FormElement {
 
   public static function validateSmsVerifyCode(&$element, FormStateInterface &$form_state, &$form) {
     $path = implode('/', array_slice($element['#array_parents'], 0, -1));
-
     $parent_element = TelephoneSmsVerifyElement::getElementByArrayPath($form, $path);
-    $parent_element_state = TelephoneSmsVerifyElement::getElementByArrayPath($form_state['values'], $path);
+
+    $path = implode('/', array_slice($element['#parents'], 0, -1));
+    $parent_element_state = TelephoneSmsVerifyElement::getElementByArrayPath($form_state->getValues(), $path);
 
     $settings = $parent_element['#settings'];
     $phone_number = TelephoneSmsVerifyElement::formatValue($parent_element_state['value']);
@@ -454,7 +433,7 @@ class TelephoneSmsVerifyElement extends FormElement {
       }
 
       //Compute session key
-      $form_id = $form_state['values']['form_id'];
+      $form_id = $form_state->getValue('form_id');
       $session_key = md5($form_id . $phone_number);
 
       $expire = $settings['sms_code_expire'];
@@ -491,23 +470,4 @@ class TelephoneSmsVerifyElement extends FormElement {
 
     return $cur;
   }
-
-//  /**
-//   * Prepares a #type 'tel' render element for input.html.twig.
-//   *
-//   * @param array $element
-//   *   An associative array containing the properties of the element.
-//   *   Properties used: #title, #value, #description, #size, #maxlength,
-//   *   #placeholder, #required, #attributes.
-//   *
-//   * @return array
-//   *   The $element with prepared variables ready for input.html.twig.
-//   */
-//  public static function preRenderTel($element) {
-//    $element['#attributes']['type'] = 'telephone_with_sms_verify';
-//    Element::setAttributes($element, array('id', 'name', 'value', 'size', 'maxlength', 'placeholder'));
-//    static::setAttributes($element, array('form-tel'));
-//
-//    return $element;
-//  }
 }
