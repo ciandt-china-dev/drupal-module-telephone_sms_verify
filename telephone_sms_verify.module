@@ -386,7 +386,7 @@ function _telephone_sms_verify_element_expand($element, &$form_state, $complete_
   $element['#settings'] += $element['#default_settings'];
   $settings = $element['#settings'];
 
-  $settings['display_sms_code_verify'] &= !user_access('bypass telephone sms verify');
+  $settings['display_sms_code_verify'] &= !\Drupal::currentUser()->hasPermission('bypass telephone sms verify');
 
   // Give user a chance finally alter the sms code verify element behavior
   $context = array(
