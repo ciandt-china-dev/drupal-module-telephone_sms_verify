@@ -53,8 +53,9 @@ class TelephoneSmsVerifyFieldWidget extends WidgetBase {
     $element['placeholder'] = array(
       '#type' => 'textfield',
       '#title' => $this->t('Placeholder'),
-      '#default_value' => $this->getSetting('placeholder'),
+      '#access' => \Drupal::moduleHandler()->moduleExists('elements') || \Drupal::moduleHandler()->moduleExists('placeholder'),
       '#description' => $this->t('The placeholder is a short hint (a word or short phrase) intended to aid the user with data entry. A hint could be a sample value or a brief description of the expected format.'),
+      '#default_value' => $this->getSetting('placeholder'),
     );
 
     $element['sms_template'] = array(
@@ -64,11 +65,13 @@ class TelephoneSmsVerifyFieldWidget extends WidgetBase {
       '#default_value' => $this->getSetting('sms_template'),
     );
 
-    /*$element['sms_template_tokens'] = array(
-      '#theme' => 'token_tree',
-      '#dialog' => TRUE,
-      '#token_types' => array('phone_sms_verify'),
-    );*/
+/*
+    $element['sms_template_tokens'] = array(
+     '#theme' => 'token_tree',
+     '#dialog' => TRUE,
+     '#token_types' => array('phone_sms_verify'),
+    );
+*/
 
     $element['sms_code_length'] = array(
       '#type' => 'number',
@@ -137,6 +140,7 @@ class TelephoneSmsVerifyFieldWidget extends WidgetBase {
     $summaryItems = [
       'placeholder',
       'sms_template',
+//      'sms_template_tokens',
       'sms_code_length',
       'sms_code_expire',
       'sms_code_count_down',
@@ -164,34 +168,30 @@ class TelephoneSmsVerifyFieldWidget extends WidgetBase {
    * {@inheritdoc}
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
-    $element = [];
-    $item = $items[$delta];
+    $form_id = $form_state->getBuildInfo()['form_id'];
 
-    $element['value'] = $element + array(
-      '#type' => 'textfield',
-      '#title' => $this->t($item->getFieldDefinition()->getLabel()),
-      '#default_value' => isset($item->value) ? $item->value : NULL,
-      '#size' => $this->getSetting('size'),
-      '#placeholder' => $this->getSetting('placeholder'),
-      '#maxlength' => $this->getFieldSetting('max_length'),
+    $settings = $this->settings;
+
+    // Do not show sms code verify element on field settings page
+    if (empty($element['#entity'])) {
+      $settings['display_sms_code_verify'] = FALSE;
+    }
+
+    // Allow to hide sms code verify element in specific forms
+    if (in_array($form_id, _telephone_sms_verify_explode_multi_lines($settings['sms_code_verify_not_displayed_forms']))) {
+      $settings['display_sms_code_verify'] = FALSE;
+    }
+
+    // Allow to mark sms code verify not required on specific forms
+    if (in_array($form_id, _telephone_sms_verify_explode_multi_lines($settings['sms_code_verify_required_on_phone_changes_forms']))) {
+      $settings['require_sms_code_verify_on_change'] = FALSE;
+    }
+
+    $element += array(
+      '#type' => 'telephone_with_sms_verify',
+      '#settings' => $settings,
+      '#default_value' => isset($items[$delta]->value) ? $items[$delta]->value : '',
     );
-
-    $element['smscode'] = [
-      '#type' => 'textfield',
-      '#size' => 10,
-      '#title' => t('SMS Code'),
-      // '#prefix' => '<div id="' . $id_prefix . '-sms-verification-code-wrapper" class="sms-verification-code">',
-      // '#element_validate' => array('telephone_sms_verify_smscode_validate'),
-      // '#required' => $settings['require_sms_code_verify_on_change'],
-    ];
-
-    $element['send_smscode'] = [
-      '#type' => 'button',
-      '#value' => t('Send SMS Code'),
-    ];
-
-
-
 
     return $element;
   }
