@@ -186,7 +186,7 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
     // Show error messages before the AJAX wrapper element
     $commands[] = ajax_command_before(NULL, theme('status_messages'));
     // Update the AJAX wrapper element
-    $commands[] = ajax_command_replace(NULL, drupal_render($parent_element['value']));
+    $commands[] = ajax_command_replace(NULL, \Drupal::service("renderer")->render($parent_element['value']));
     return array('#type' => 'ajax', '#commands' => $commands);
   }
 
@@ -196,8 +196,8 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
     if ($form_state['triggering_element']['#name'] == $id_prefix . '-send-smscode-btn-op' || isset($parent_element['smscode_captcha']['container']) && form_get_error($parent_element['smscode_captcha']['container']['captcha']['captcha_widgets']['captcha_response'])) {
       // Clear all messages errors
       $commands[] = ajax_command_remove('#messages');
-      $commands[] = ajax_command_replace(NULL, drupal_render($parent_element['value']));
-      $commands[] = ajax_command_replace('#' . $id_prefix . '-captcha-wrapper', drupal_render($parent_element['smscode_captcha']));
+      $commands[] = ajax_command_replace(NULL, \Drupal::service("renderer")->render($parent_element['value']));
+      $commands[] = ajax_command_replace('#' . $id_prefix . '-captcha-wrapper', \Drupal::service("renderer")->render($parent_element['smscode_captcha']));
       // Show error messages before the AJAX wrapper element
       $commands[] = ajax_command_after('.' . $id_prefix . '-smscode-captcha-container .form-item-captcha-response', theme('status_messages'));
       return array('#type' => 'ajax', '#commands' => $commands);
@@ -246,7 +246,7 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   // Clear all messages errors
   $commands[] = ajax_command_remove('#messages');
   // Update the AJAX wrapper element
-  $commands[] = ajax_command_replace(NULL, drupal_render($parent_element['value']));
+  $commands[] = ajax_command_replace(NULL, \Drupal::service("renderer")->render($parent_element['value']));
   // Trigger javascript messages send countdown
   $commands[] = ajax_command_invoke(NULL, 'DrupalTelephoneSMSVerifyCountDown', array(
     '#' . $id_prefix . '-send-smscode-btn',
