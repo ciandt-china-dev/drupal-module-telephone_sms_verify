@@ -1,11 +1,5 @@
 <?php
 
-/**
- * Created by PhpStorm.
- * User: Rock
- * Date: 2016/3/24
- * Time: 14:44
- */
 namespace Drupal\telephone_sms_verify\Render\Element;
 
 use Drupal\Core\Render\Element\FormElement;
@@ -91,7 +85,7 @@ class TelephoneSmsVerifyElement extends FormElement {
       '#prefix' => '<div id="' . $id_prefix . '-value-wrapper">',
       '#suffix' => '</div>',
       '#placeholder' => $settings['placeholder'],
-      '#element_validate' => array(get_called_class(),'validatePhoneValue'),
+      '#element_validate' => array(get_called_class(), 'validatePhoneValue'),
     );
 
     if (isset($complete_form['#form_placeholder'])) {
@@ -158,37 +152,38 @@ class TelephoneSmsVerifyElement extends FormElement {
       return $input['value'];
     }
   }
-  
+
   public static function validatePhoneValue($element, FormStateInterface &$form_state, $form) {
-  $path = implode('/', array_slice($element['#array_parents'], 0, -1));
-  $parent_element = TelephoneSmsVerifyElement::getElementByArrayPath($form, $path);
-  $parent_element_state = TelephoneSmsVerifyElement::getElementByArrayPath($form_state['values'], $path);
+    $path = implode('/', array_slice($element['#array_parents'], 0, -1));
+    $parent_element = TelephoneSmsVerifyElement::getElementByArrayPath($form, $path);
+    $parent_element_state = TelephoneSmsVerifyElement::getElementByArrayPath($form_state['values'], $path);
 
-  $settings = $parent_element['#settings'];
-  $phone_number = TelephoneSmsVerifyElement::formatValue($parent_element_state['value']);
-  if ($settings['widget'] && isset($phone_number['value'])) {
-    $phone_number = $phone_number['value'];
+    $settings = $parent_element['#settings'];
+    $phone_number = TelephoneSmsVerifyElement::formatValue($parent_element_state['value']);
+    if ($settings['widget'] && isset($phone_number['value'])) {
+      $phone_number = $phone_number['value'];
+    }
+    $phone_number_default = TelephoneSmsVerifyElement::formatValue($parent_element['#default_value']);
+
+    $expire = $settings['sms_code_expire'];
+
+    //Compute session key
+    $form_id = $form_state['values']['form_id'];
+    $session_key = md5($form_id . $phone_number);
+
+    $max_request = $settings['sms_code_max_request'];
+
+    // Do not send sms verification code on account editing page and the phone number is not changed
+    if ($settings['display_sms_code_verify'] && $settings['require_sms_code_verify_on_change'] && $phone_number == $phone_number_default) {
+      $form_state->setError($element, t('Your phone number has not changed, no SMS verification code is sent.'));
+    }
+
+    if ($settings['display_sms_code_verify'] && isset($_SESSION[$session_key]) && $_SESSION[$session_key]['time'] + 60 * $expire >= time() && $_SESSION[$session_key]['count'] >= $max_request) {
+      $minutes_left = ceil((($_SESSION[$session_key]['time'] + 60 * $expire) - time()) / 60);
+      $form_state->setError($element, t('You have reached the maximum request limitation, please try again after @expire minutes', array('@expire' => $minutes_left)));
+    }
   }
-$phone_number_default = TelephoneSmsVerifyElement::formatValue($parent_element['#default_value']);
 
-$expire = $settings['sms_code_expire'];
-
-//Compute session key
-$form_id = $form_state['values']['form_id'];
-$session_key = md5($form_id . $phone_number);
-
-$max_request = $settings['sms_code_max_request'];
-
-// Do not send sms verification code on account editing page and the phone number is not changed
-if ($settings['display_sms_code_verify'] && $settings['require_sms_code_verify_on_change'] && $phone_number == $phone_number_default) {
-  $form_state->setError($element, t('Your phone number has not changed, no SMS verification code is sent.'));
-}
-
-if ($settings['display_sms_code_verify'] && isset($_SESSION[$session_key]) && $_SESSION[$session_key]['time'] + 60 * $expire >= time() && $_SESSION[$session_key]['count'] >= $max_request) {
-  $minutes_left = ceil((($_SESSION[$session_key]['time'] + 60 * $expire) - time()) / 60);
-  $form_state->setError($element, t('You have reached the maximum request limitation, please try again after @expire minutes', array('@expire' => $minutes_left)));
-}
-}
   public static function getElementByArrayPath($arr, $path) {
     if (!$path) {
       return NULL;
@@ -208,6 +203,7 @@ if ($settings['display_sms_code_verify'] && isset($_SESSION[$session_key]) && $_
 
     return $cur;
   }
+
   public static function formatValue($current, $default = '') {
     return isset($current) ? $current : $default;
   }
