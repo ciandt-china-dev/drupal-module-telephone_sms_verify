@@ -2,27 +2,27 @@
 
 /**
  * @file
- * Contains \Drupal\sms_verfly\Plugin\Field\FieldWidget\SmsVerflyFieldWidget.
+ * Contains \Drupal\telephone_sms_verify\Plugin\Field\FieldWidget\TelephoneSmsVerifyFieldWidget.
  */
 
-namespace Drupal\sms_verfly\Plugin\Field\FieldWidget;
+namespace Drupal\telephone_sms_verify\Plugin\Field\FieldWidget;
 
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\WidgetBase;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
- * Plugin implementation of the 'sms_verfly_field_widget' widget.
+ * Plugin implementation of the 'telephone_sms_verify_field_widget' widget.
  *
  * @FieldWidget(
- *   id = "sms_verfly_field_widget",
- *   label = @Translation("Sms verfly field widget"),
+ *   id = "telephone_sms_verify_field_widget",
+ *   label = @Translation("Telephone SMS verification"),
  *   field_types = {
  *     "telephone"
  *   }
  * )
  */
-class SmsVerflyFieldWidget extends WidgetBase {
+class TelephoneSmsVerifyFieldWidget extends WidgetBase {
   /**
    * {@inheritdoc}
    */
