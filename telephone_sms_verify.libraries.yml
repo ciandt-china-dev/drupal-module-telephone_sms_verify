@@ -1,0 +1,10 @@
+telephone_sms_verify.js:
+  js:
+    js/telephone_sms_verify.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupalSettings
+
+telephone_sms_verify.css:
+  css:
+    css/telephone_sms_verify.css: {}

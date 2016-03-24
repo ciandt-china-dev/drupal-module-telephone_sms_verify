@@ -40,14 +40,27 @@ use Drupal\Core\Form\FormStateInterface;
 class TelephoneSmsVerifyElement extends FormElement {
 
   /**
-   * Implements hook_element_info().
+   * Returns the element properties for this element.
+   *
+   * @return array
+   *   An array of element properties. See
+   *   \Drupal\Core\Render\ElementInfoManagerInterface::getInfo() for
+   *   documentation of the standard properties of all elements, and the
+   *   return value format.
    */
-  function telephone_sms_verify_element_info() {
-    $type['telephone_with_sms_verify'] = array(
+  public function getInfo() {
+    $class = get_class($this);
+
+    return array(
       '#tree' => TRUE,
       '#input' => TRUE,
       '#required' => FALSE,
-      '#process' => array('_telephone_sms_verify_element_expand', 'form_process_container'),
+      '#process' => array(
+        array($class, 'expandElement'),
+      ),
+//      '#pre_render' => array(
+//        array($class, 'preRenderTel'),
+//      ),
       '#description' => t('Telephone number'),
       '#default_value' => '',
       '#theme_wrappers' => array('container'),
@@ -64,20 +77,43 @@ class TelephoneSmsVerifyElement extends FormElement {
         'display_sms_code_verify' => TRUE,
         'require_sms_code_verify_on_change' => TRUE,
       ),
-      '#value_callback' => '_telephone_sms_verify_element_value',
-      '#element_validate' => array('telephone_sms_verify_validate'),
+      '#value_callback' => array($class, 'valueCallback'),
+      '#element_validate' => array($class, 'validateElement'),
     );
-    return $type;
   }
 
-  function _telephone_sms_verify_element_expand($element, &$form_state, $complete_form) {
+  /**
+   * {@inheritdoc}
+   */
+//  public function getInfo() {
+//    $class = get_class($this);
+//    return array(
+//      '#input' => TRUE,
+//      '#size' => 30,
+//      '#maxlength' => 128,
+//      '#autocomplete_route_name' => FALSE,
+//      '#process' => array(
+//        array($class, 'processAutocomplete'),
+//        array($class, 'processAjaxForm'),
+//        array($class, 'processPattern'),
+//      ),
+//      '#pre_render' => array(
+//        array($class, 'preRenderTel'),
+//      ),
+//      '#theme' => 'input__tel',
+//      '#theme_wrappers' => array('form_element'),
+//    );
+//  }
+
+  public static function expandElement(&$element, FormStateInterface &$form_state, &$complete_form) {
     if (!isset($element['#settings'])) {
       $element['#settings'] = array();
     }
     $element['#settings'] += $element['#default_settings'];
     $settings = $element['#settings'];
 
-    $settings['display_sms_code_verify'] &= !\Drupal::currentUser()->hasPermission('bypass telephone sms verify');
+//    $settings['display_sms_code_verify'] &= !\Drupal::currentUser()->hasPermission('bypass telephone sms verify');
+    $settings['display_sms_code_verify'] = TRUE;
 
     // Give user a chance finally alter the sms code verify element behavior
     $context = array(
@@ -90,7 +126,7 @@ class TelephoneSmsVerifyElement extends FormElement {
     $id_prefix = implode('-', preg_replace('$_$', '-', $element['#array_parents']));
 
     $element['value'] = array(
-      '#type' => \Drupal::moduleHandler()->moduleExists('elements') ? 'telfield' : 'textfield',
+      '#type' => 'tel',
       '#title' => $element['#title'],
       '#required' => $element['#required'],
       '#maxlength' => isset($element['#maxlength']) ? $element['#maxlength'] : 11,
@@ -100,7 +136,7 @@ class TelephoneSmsVerifyElement extends FormElement {
       '#prefix' => '<div id="' . $id_prefix . '-value-wrapper">',
       '#suffix' => '</div>',
       '#placeholder' => $settings['placeholder'],
-      '#element_validate' => array('telephone_sms_verify_value_validate'),
+      '#element_validate' => array(get_called_class(), 'validateElementValue'),
     );
 
     if (isset($complete_form['#form_placeholder'])) {
@@ -121,14 +157,14 @@ class TelephoneSmsVerifyElement extends FormElement {
           $form_state['rebuild'] == FALSE && (!isset($form_state['triggering_element']) || $form_state['triggering_element']['#name'] != 'op')
         )
       ) {
-        $element['smscode_captcha']['#attached'] = array(
-          'js' => array(
-            drupal_get_path('module', 'telephone_sms_verify') . '/telephone_sms_verify.js',
-          ),
-          'css' => array(
-            drupal_get_path('module', 'telephone_sms_verify') . '/telephone_sms_verify.css',
-          ),
-        );
+//        $element['smscode_captcha']['#attached'] = array(
+//          'js' => array(
+//            drupal_get_path('module', 'telephone_sms_verify') . '/telephone_sms_verify.js',
+//          ),
+//          'css' => array(
+//            drupal_get_path('module', 'telephone_sms_verify') . '/telephone_sms_verify.css',
+//          ),
+//        );
         $element['smscode_captcha']['overlay'] = array(
           '#type' => 'container',
           '#attributes' => array(
@@ -189,7 +225,10 @@ class TelephoneSmsVerifyElement extends FormElement {
         '#title' => t('SMS Code'),
         '#weight' => 1,
         '#prefix' => '<div id="' . $id_prefix . '-sms-verification-code-wrapper" class="sms-verification-code">',
-        '#element_validate' => array('telephone_sms_verify_smscode_validate'),
+        '#element_validate' => array(
+          get_called_class(),
+          'validateSmsVerifyCode'
+        ),
         '#required' => $settings['require_sms_code_verify_on_change'],
       );
 
@@ -198,20 +237,17 @@ class TelephoneSmsVerifyElement extends FormElement {
         '#type' => 'button',
         '#ajax' => array(
           'wrapper' => $id_prefix . '-value-wrapper',
-          'callback' => 'telephone_sms_verify_ajax_callback',
+          'callback' => 'Drupal\telephone_sms_verify\Element\TelephoneSmsVerifyElement::ajaxCallback',
         ),
         '#value' => t('Send SMS Code'),
         '#weight' => 2,
         '#prefix' => '<div id="' . $id_prefix . '-send-smscode-btn-wrapper"><div id="' . $id_prefix . '-send-smscode-btn">',
         '#suffix' => '</div><div id="' . $id_prefix . '-send-smscode-count-down"></div></div></div>',
         '#attached' => array(
-          'js' => array(
-            drupal_get_path('module', 'telephone_sms_verify') . '/telephone_sms_verify.js',
-            array(
-              'data' => array('smscode_count_down' => $settings['sms_code_count_down']),
-              'type' => 'setting'
-            ),
+          'library' => array(
+            'telephone_sms_verify/js',
           ),
+          'drupalSettings' => array('smscode_count_down' => $settings['sms_code_count_down']),
         ),
         '#limit_validation_errors' => array(
           // Validate only the phone number field on AJAX call
@@ -224,7 +260,7 @@ class TelephoneSmsVerifyElement extends FormElement {
     return $element;
   }
 
-  function _telephone_sms_verify_element_value($element, $input, $form_state) {
+  public static function valueCallback(&$element, $input, FormStateInterface $form_state) {
     if ($element['#settings']['widget']) {
       return $input;
     }
@@ -233,17 +269,17 @@ class TelephoneSmsVerifyElement extends FormElement {
     }
   }
 
-  function telephone_sms_verify_ajax_callback($form, $form_state) {
-    if (preg_match('/captcha-verify-op$/', $form_state['triggering_element']['#name'])) {
-      $path = implode('/', array_slice($form_state['triggering_element']['#array_parents'], 0, -3));
+  public static function ajaxCallback($form, FormStateInterface $form_state) {
+    if (preg_match('/captcha-verify-op$/', $form_state->getTriggeringElement()['#name'])) {
+      $path = implode('/', array_slice($form_state->getTriggeringElement()['#array_parents'], 0, -3));
     }
     else {
-      $path = implode('/', array_slice($form_state['triggering_element']['#array_parents'], 0, -1));
+      $path = implode('/', array_slice($form_state->getTriggeringElement()['#array_parents'], 0, -1));
     }
-    $parent_element = _telephone_sms_verify_get_element_by_array_path($form, $path);
+    $parent_element = TelephoneSmsVerifyElement::getElementByArrayPath($form, $path);
 
     $settings = $parent_element['#settings'];
-    $phone_number = _telephone_sms_verify_format_default_value($parent_element['#value']);
+    $phone_number = TelephoneSmsVerifyElement::formatValue($parent_element['#value']);
     if ($settings['widget']) {
       $phone_number = $phone_number['value'];
     }
@@ -251,7 +287,7 @@ class TelephoneSmsVerifyElement extends FormElement {
     $commands = array();
 
     // if there are errors on phone number element
-    if (empty($phone_number) || form_get_error($parent_element['value'])) {
+    if (empty($phone_number) || $form_state->getError($parent_element['value'])) {
       // Clear all messages errors
       $removeCommand = new RemoveCommand('#messages');
       $commands[] = $removeCommand->render();
@@ -310,7 +346,7 @@ class TelephoneSmsVerifyElement extends FormElement {
     }
 
     //Compute session key
-    $form_id = $form_state['values']['form_id'];
+    $form_id = $form_state->getValue('form_id');
     $session_key = md5($form_id . $phone_number);
 
     $expire = $settings['sms_code_expire'];
@@ -363,21 +399,21 @@ class TelephoneSmsVerifyElement extends FormElement {
     return array('#type' => 'ajax', '#commands' => $commands);
   }
 
-  function telephone_sms_verify_validate($element, &$form_state, $form) {
+  public static function validateElement(&$element, FormStateInterface &$form_state, &$complete_form) {
     $form_state->setValueForElement($element, $element['#value']);
   }
 
-  function telephone_sms_verify_value_validate($element, &$form_state, $form) {
+  public static function validateElementValue($element, FormStateInterface &$form_state, $form) {
     $path = implode('/', array_slice($element['#array_parents'], 0, -1));
-    $parent_element = _telephone_sms_verify_get_element_by_array_path($form, $path);
-    $parent_element_state = _telephone_sms_verify_get_element_by_array_path($form_state['values'], $path);
+    $parent_element = TelephoneSmsVerifyElement::getElementByArrayPath($form, $path);
+    $parent_element_state = TelephoneSmsVerifyElement::getElementByArrayPath($form_state['values'], $path);
 
     $settings = $parent_element['#settings'];
-    $phone_number = _telephone_sms_verify_format_default_value($parent_element_state['value']);
+    $phone_number = TelephoneSmsVerifyElement::formatValue($parent_element_state['value']);
     if ($settings['widget'] && isset($phone_number['value'])) {
       $phone_number = $phone_number['value'];
     }
-    $phone_number_default = _telephone_sms_verify_format_default_value($parent_element['#default_value']);
+    $phone_number_default = TelephoneSmsVerifyElement::formatValue($parent_element['#default_value']);
 
     $expire = $settings['sms_code_expire'];
 
@@ -389,23 +425,23 @@ class TelephoneSmsVerifyElement extends FormElement {
 
     // Do not send sms verification code on account editing page and the phone number is not changed
     if ($settings['display_sms_code_verify'] && $settings['require_sms_code_verify_on_change'] && $phone_number == $phone_number_default) {
-      form_error($element, t('Your phone number has not changed, no SMS verification code is sent.'));
+      $form_state->setError($element, t('Your phone number has not changed, no SMS verification code is sent.'));
     }
 
     if ($settings['display_sms_code_verify'] && isset($_SESSION[$session_key]) && $_SESSION[$session_key]['time'] + 60 * $expire >= time() && $_SESSION[$session_key]['count'] >= $max_request) {
       $minutes_left = ceil((($_SESSION[$session_key]['time'] + 60 * $expire) - time()) / 60);
-      form_error($element, t('You have reached the maximum request limitation, please try again after @expire minutes', array('@expire' => $minutes_left)));
+      $form_state->setError($element, t('You have reached the maximum request limitation, please try again after @expire minutes', array('@expire' => $minutes_left)));
     }
   }
 
-  function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
+  public static function validateSmsVerifyCode(&$element, FormStateInterface &$form_state, &$form) {
     $path = implode('/', array_slice($element['#array_parents'], 0, -1));
 
-    $parent_element = _telephone_sms_verify_get_element_by_array_path($form, $path);
-    $parent_element_state = _telephone_sms_verify_get_element_by_array_path($form_state['values'], $path);
+    $parent_element = TelephoneSmsVerifyElement::getElementByArrayPath($form, $path);
+    $parent_element_state = TelephoneSmsVerifyElement::getElementByArrayPath($form_state['values'], $path);
 
     $settings = $parent_element['#settings'];
-    $phone_number = _telephone_sms_verify_format_default_value($parent_element_state['value']);
+    $phone_number = TelephoneSmsVerifyElement::formatValue($parent_element_state['value']);
     if ($settings['widget'] && isset($phone_number['value'])) {
       $phone_number = $phone_number['value'];
     }
@@ -414,7 +450,7 @@ class TelephoneSmsVerifyElement extends FormElement {
     // Only validates this field if the telephone number is newly added or changed
     if ($phone_number != $phone_number_default) {
       if (empty($element['#value'])) {
-        form_error($element, t('This field is required.'));
+        $form_state->setError($element, t('This field is required.'));
       }
 
       //Compute session key
@@ -424,19 +460,19 @@ class TelephoneSmsVerifyElement extends FormElement {
       $expire = $settings['sms_code_expire'];
 
       if (!isset($_SESSION[$session_key]) || $element['#value'] != $_SESSION[$session_key]['code']) {
-        form_error($element, t('Your SMS verification code is not right'));
+        $form_state->setError($element, t('Your SMS verification code is not right'));
       }
       elseif ($_SESSION[$session_key]['time'] + 60 * $expire < time()) {
-        form_error($element, t('This SMS code has expired.'));
+        $form_state->setError($element, t('This SMS code has expired.'));
       }
     }
   }
 
-  function _telephone_sms_verify_format_default_value($current, $default = '') {
+  public static function formatValue($current, $default = '') {
     return isset($current) ? $current : $default;
   }
 
-  function _telephone_sms_verify_get_element_by_array_path($arr, $path) {
+  public static function getElementByArrayPath($arr, $path) {
     if (!$path) {
       return NULL;
     }
@@ -455,4 +491,23 @@ class TelephoneSmsVerifyElement extends FormElement {
 
     return $cur;
   }
+
+//  /**
+//   * Prepares a #type 'tel' render element for input.html.twig.
+//   *
+//   * @param array $element
+//   *   An associative array containing the properties of the element.
+//   *   Properties used: #title, #value, #description, #size, #maxlength,
+//   *   #placeholder, #required, #attributes.
+//   *
+//   * @return array
+//   *   The $element with prepared variables ready for input.html.twig.
+//   */
+//  public static function preRenderTel($element) {
+//    $element['#attributes']['type'] = 'telephone_with_sms_verify';
+//    Element::setAttributes($element, array('id', 'name', 'value', 'size', 'maxlength', 'placeholder'));
+//    static::setAttributes($element, array('form-tel'));
+//
+//    return $element;
+//  }
 }
