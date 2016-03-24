@@ -4,6 +4,12 @@
  * Add SMS verification to telephone number field.
  */
 
+use Drupal\Core\Ajax\BeforeCommand;
+use Drupal\Core\Ajax\AfterCommand;
+use Drupal\Core\Ajax\InvokeCommand;
+use Drupal\Core\Ajax\RemoveCommand;
+use Drupal\Core\Ajax\ReplaceCommand;
+
 function telephone_sms_verify_ajax_callback($form, $form_state) {
   if (preg_match('/captcha-verify-op$/', $form_state['triggering_element']['#name'])) {
     $path = implode('/', array_slice($form_state['triggering_element']['#array_parents'], 0, -3));
@@ -23,7 +29,9 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   // if there are errors on phone number element
   if (empty($phone_number) || form_get_error($parent_element['value'])) {
     // Clear all messages errors
-    $commands[] = ajax_command_remove('#messages');
+    $removeCommand = new RemoveCommand('#messages');
+    $commands[] = $removeCommand->render();
+
     // Show error messages before the AJAX wrapper element
     // @FIXME
     // theme() has been renamed to _theme() and should NEVER be called directly.
@@ -33,10 +41,13 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
     // 
     // 
     // @see https://www.drupal.org/node/2195739
-    $commands[] = ajax_command_before(NULL, \Drupal::service("renderer")->render(array('#type' => 'status_messages')));
+    $beforeCommand = new BeforeCommand(NULL, \Drupal::service("renderer")->render(array('#type' => 'status_messages')));
+    $commands[] = $beforeCommand->render();
 
     // Update the AJAX wrapper element
-    $commands[] = ajax_command_replace(NULL, \Drupal::service("renderer")->render($parent_element['value']));
+    $replaceCommand = new ReplaceCommand(NULL, \Drupal::service("renderer")->render($parent_element['value']));
+    $commands[] = $replaceCommand->render();
+
     return array('#type' => 'ajax', '#commands' => $commands);
   }
 
@@ -45,9 +56,15 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   if ($settings['captcha'] && \Drupal::moduleHandler()->moduleExists('captcha')) {
     if ($form_state['triggering_element']['#name'] == $id_prefix . '-send-smscode-btn-op' || isset($parent_element['smscode_captcha']['container']) && form_get_error($parent_element['smscode_captcha']['container']['captcha']['captcha_widgets']['captcha_response'])) {
       // Clear all messages errors
-      $commands[] = ajax_command_remove('#messages');
-      $commands[] = ajax_command_replace(NULL, \Drupal::service("renderer")->render($parent_element['value']));
-      $commands[] = ajax_command_replace('#' . $id_prefix . '-captcha-wrapper', \Drupal::service("renderer")->render($parent_element['smscode_captcha']));
+      $removeCommand = new RemoveCommand('#messages');
+      $commands[] = $removeCommand->render();
+
+      $replaceCommand = new ReplaceCommand(NULL, \Drupal::service("renderer")->render($parent_element['value']));
+      $commands[] = $replaceCommand->render();
+
+      $replaceCommand = new ReplaceCommand('#' . $id_prefix . '-captcha-wrapper', \Drupal::service("renderer")->render($parent_element['smscode_captcha']));
+      $commands[] = $replaceCommand->render();
+
       // Show error messages before the AJAX wrapper element
       // @FIXME
       // theme() has been renamed to _theme() and should NEVER be called directly.
@@ -57,12 +74,14 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
       // 
       // 
       // @see https://www.drupal.org/node/2195739
-      $commands[] = ajax_command_after('.' . $id_prefix . '-smscode-captcha-container .form-item-captcha-response', \Drupal::service("renderer")->render(array('#type' => 'status_messages')));
+      $afterCommand = new AfterCommand('.' . $id_prefix . '-smscode-captcha-container .form-item-captcha-response', \Drupal::service("renderer")->render(array('#type' => 'status_messages')));
+      $commands[] = $afterCommand->render();
 
       return array('#type' => 'ajax', '#commands' => $commands);
     }
     else {
-      $commands[] = ajax_command_replace('#' . $id_prefix . '-captcha-wrapper', '<div id="' . $id_prefix . '-captcha-wrapper"></div>');
+      $replaceCommand = new ReplaceCommand('#' . $id_prefix . '-captcha-wrapper', '<div id="' . $id_prefix . '-captcha-wrapper"></div>');
+      $commands[] = $replaceCommand->render();
     }
   }
 
@@ -103,14 +122,19 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   sms_send($phone_number, $template);
 
   // Clear all messages errors
-  $commands[] = ajax_command_remove('#messages');
+  $removeCommand = new RemoveCommand('#messages');
+  $commands[] = $removeCommand->render();
+
   // Update the AJAX wrapper element
-  $commands[] = ajax_command_replace(NULL, \Drupal::service("renderer")->render($parent_element['value']));
+  $replaceCommand = new ReplaceCommand(NULL, \Drupal::service("renderer")->render($parent_element['value']));
+  $commands[] = $replaceCommand->render();
+
   // Trigger javascript messages send countdown
-  $commands[] = ajax_command_invoke(NULL, 'DrupalTelephoneSMSVerifyCountDown', array(
+  $invokeCommand = new InvokeCommand(NULL, 'DrupalTelephoneSMSVerifyCountDown', array(
     '#' . $id_prefix . '-send-smscode-btn',
     '#' . $id_prefix . '-send-smscode-count-down'
   ));
+  $commands[] = $invokeCommand->render();
 
   return array('#type' => 'ajax', '#commands' => $commands);
 }
