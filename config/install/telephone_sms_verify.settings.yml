@@ -1,0 +1,4 @@
+telephone_sms_verify_sms_code_expire: 30
+telephone_sms_verify_sms_code_length: 6
+telephone_sms_verify_sms_code_count_down: 30
+telephone_sms_verify_sms_code_max_request: 3
