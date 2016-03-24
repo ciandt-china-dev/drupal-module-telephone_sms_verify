@@ -1,0 +1,7 @@
+name: Telephone SMS Verify
+core: 8.x
+type: module
+description: Verify telephone number with SMS
+dependencies:
+  - telephone
+  - sms
