@@ -75,7 +75,9 @@ class TelephoneSmsVerifyElement extends FormElement {
         'display_sms_code_verify' => TRUE,
         'require_sms_code_verify_on_change' => TRUE,
       ),
+
       '#value_callback' => array($class, 'valueCallback'),
+
       '#element_validate' => array(array($class, 'validateElement')),
     );
   }
@@ -111,7 +113,9 @@ class TelephoneSmsVerifyElement extends FormElement {
       '#prefix' => '<div id="' . $id_prefix . '-value-wrapper">',
       '#suffix' => '</div>',
       '#placeholder' => $settings['placeholder'],
+
       '#element_validate' => array(array(get_called_class(), 'validateElementValue')),
+
     );
 
     if (isset($complete_form['#form_placeholder'])) {
@@ -383,7 +387,9 @@ class TelephoneSmsVerifyElement extends FormElement {
     $path = implode('/', array_slice($element['#array_parents'], 0, -1));
     $parent_element = TelephoneSmsVerifyElement::getElementByArrayPath($form, $path);
 
+
     $path = implode('/', array_slice($element['#parents'], 0, -1));
+
     $parent_element_state = TelephoneSmsVerifyElement::getElementByArrayPath($form_state->getValues(), $path);
 
     $settings = $parent_element['#settings'];
@@ -395,9 +401,11 @@ class TelephoneSmsVerifyElement extends FormElement {
 
     $expire = $settings['sms_code_expire'];
 
+
     //Compute session key
     $form_id = $form_state->getValue('form_id');
     $session_key = md5($form_id . $phone_number);
+
 
     $max_request = $settings['sms_code_max_request'];
 
@@ -416,7 +424,9 @@ class TelephoneSmsVerifyElement extends FormElement {
     $path = implode('/', array_slice($element['#array_parents'], 0, -1));
     $parent_element = TelephoneSmsVerifyElement::getElementByArrayPath($form, $path);
 
+
     $path = implode('/', array_slice($element['#parents'], 0, -1));
+
     $parent_element_state = TelephoneSmsVerifyElement::getElementByArrayPath($form_state->getValues(), $path);
 
     $settings = $parent_element['#settings'];
@@ -432,9 +442,11 @@ class TelephoneSmsVerifyElement extends FormElement {
         $form_state->setError($element, t('This field is required.'));
       }
 
+
       //Compute session key
       $form_id = $form_state->getValue('form_id');
       $session_key = md5($form_id . $phone_number);
+
 
       $expire = $settings['sms_code_expire'];
 
