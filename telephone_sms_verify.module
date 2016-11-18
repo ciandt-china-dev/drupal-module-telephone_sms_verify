@@ -560,7 +560,7 @@ function telephone_sms_verify_element_info() {
  * @return mixed
  */
 function _telephone_sms_verify_element_value($element, $input, $form_state) {
-  if ($element['#settings']['widget']) {
+  if (isset($element['#settings']) && isset($element['#settings']['widget'])) {
     return $input;
   }
   else {
