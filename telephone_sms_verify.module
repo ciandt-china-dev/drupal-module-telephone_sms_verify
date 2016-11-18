@@ -176,6 +176,7 @@ function telephone_sms_verify_field_widget_info() {
         'telephone_sms_verify_require_sms_code_verify' => variable_get('telephone_sms_verify_require_sms_code_verify', DEFAULT_TELEPHONE_SMS_VERIFY_REQUIRE_SMS_CODE_VERIFY),
         'telephone_sms_verify_sms_code_validate_callback' => variable_get('telephone_sms_verify_sms_code_validate_callback', ''),
         'telephone_sms_verify_value_validate_callback' => variable_get('telephone_sms_verify_value_validate_callback', ''),
+        'sms_code_verify_not_required_forms' => '',
         'sms_code_verify_not_displayed_forms' => '',
       ),
       'behaviors' => array(
@@ -199,6 +200,11 @@ function telephone_sms_verify_field_widget_form(&$form, &$form_state, $field, $i
   // Do not show sms code verify element on field settings page
   if (empty($element['#entity'])) {
     $settings['telephone_sms_verify_display_sms_code_verify'] = FALSE;
+  }
+
+  // Allow to do not require sms code verify element in specific forms
+  if (in_array($form_id, _telephone_sms_verify_explode_multi_lines($settings['sms_code_verify_not_required_forms']))) {
+    $settings['telephone_sms_verify_require_sms_code_verify'] = FALSE;
   }
 
   // Allow to hide sms code verify element in specific forms
@@ -239,10 +245,17 @@ function telephone_sms_verify_field_widget_settings_form($field, $instance) {
 
   telephone_sms_verify_build_settings_form($element, $settings);
 
-  $element['sms_code_verify_not_displayed_forms'] = array(
+  $element['sms_code_verify_not_required_forms'] = array(
     '#type' => 'textarea',
     '#title' => t('SMS Code Verify Not Required Forms'),
     '#description' => t('Form IDs that do not require SMS code verification. Fill with a drupal form id in each line.'),
+    '#default_value' => $settings['sms_code_verify_not_required_forms'],
+  );
+
+  $element['sms_code_verify_not_displayed_forms'] = array(
+    '#type' => 'textarea',
+    '#title' => t('SMS Code Verify Not Displayed Forms'),
+    '#description' => t('Form IDs that do not display SMS code verification. Fill with a drupal form id in each line.'),
     '#default_value' => $settings['sms_code_verify_not_displayed_forms'],
   );
 
