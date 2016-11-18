@@ -592,6 +592,7 @@ function _telephone_sms_verify_element_expand($element, &$form_state, $complete_
     'form_state' => $form_state,
   );
   drupal_alter('sms_code_verify_element_settings', $settings, $context);
+  $element['#settings'] = $settings;
 
   $id_prefix = implode('-', preg_replace('$_$', '-', $element['#array_parents']));
 
