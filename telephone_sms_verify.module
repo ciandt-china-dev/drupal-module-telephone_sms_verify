@@ -288,7 +288,10 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
   $commands = array();
 
   // if there are errors on phone number element
-  if (empty($phone_number) || form_get_error($parent_element['value'])) {
+  if (
+      ($settings['widget'] || empty($settings['phone_field'])) &&
+      (empty($phone_number) || form_get_error($parent_element['value']))
+  ) {
     // Clear all messages errors
     $commands[] = ajax_command_remove('#messages');
     // Show error messages before the AJAX wrapper element
@@ -315,35 +318,60 @@ function telephone_sms_verify_ajax_callback($form, $form_state) {
     }
   }
 
-  //Compute session key
-  $form_id = $form_state['values']['form_id'];
-
   $expire = $settings['telephone_sms_verify_sms_code_expire'];
   $length = $settings['telephone_sms_verify_sms_code_length'];
+  $smscode = sprintf('%0' . $length . 'd', rand(0, (int) str_repeat('9', $length)));
 
-  $record['code'] = sprintf('%0' . $length . 'd', rand(0, (int) str_repeat('9', $length)));
-  $record['created'] = time();
+  try {
+    // TODO create a function to use phone_number, exipre, smscode to send message
+    // TODO the function can return a exipre and a smscode if it has itw own logic
+    // TODO then we save it
+    // Get SMS verification template from field widget settings
+    $template = t($settings['telephone_sms_verify_sms_template']);
 
-  // Get SMS verification template from field widget settings
-  $template = t($settings['telephone_sms_verify_sms_template']);
+    // Set default value is no template is configured
+    if (empty($template)) {
+      $template = t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE);
+    }
 
-  // Set default value is no template is configured
-  if (empty($template)) {
-    $template = t(DEFAULT_VERIFICATION_MESSAGE_TEMPLATE);
+    $template = token_replace($template, array(
+      'phone_sms_verify' => array(
+        'verify_code' => $smscode,
+        'expire_time' => $expire,
+      ),
+    ));
+
+    // Send SMS verification code using SMS Framework
+    // TODO add check for sms module
+    sms_send($phone_number, $template);
+  } catch (Exception $e) {
+    form_error($parent_element['smscode'], $e->getMessage());
+
+    // if there are errors on phone number element
+    if (form_get_errors()) {
+      if (module_exists('ife')) {
+        ife_element_errors_set($form, 1);
+      }
+      // Clear all messages errors
+      $commands[] = ajax_command_remove('#messages');
+      // Show error messages before the AJAX wrapper element
+      $commands[] = ajax_command_before(NULL, theme('status_messages'));
+      $form_state['rebuild'] = TRUE;
+      $form = drupal_rebuild_form($form['#form_id'], $form_state, $form);
+      $parent_element = _telephone_sms_verify_get_element_by_array_path($form, $path);
+      $commands[] = ajax_command_replace(
+          '#telephone-sms-verify-element-wrapper',
+          drupal_render($parent_element)
+      );
+      return array('#type' => 'ajax', '#commands' => $commands);
+    }
   }
 
-  $template = token_replace($template, array(
-    'phone_sms_verify' => array(
-      'verify_code' => $record['code'],
-      'expire_time' => $expire,
-    ),
-  ));
-
-  // Send SMS verification code using SMS Framework
-  sms_send($phone_number, $template);
-
+  $record['code'] = $smscode;
+  $record['created'] = time();
+// TODO  $record['expire'] = $expire;
   $record['phone'] = $phone_number;
-  $record['form_id'] = $form_id;
+  $record['form_id'] = $form_state['values']['form_id'];
   $record['sent'] = time();
   $record['content'] = $template;
   drupal_write_record('telephone_sms_verify_history', $record);
@@ -472,10 +500,8 @@ function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
     //Compute session key
     $form_id = $form_state['values']['form_id'];
 
-    $expire = $settings['telephone_sms_verify_sms_code_expire'];
-
     $result = db_select('telephone_sms_verify_history', 'h')
-      ->fields('h', array('code', 'created'))
+      ->fields('h', array('code', 'created', 'expire'))
       ->condition('phone', $phone_number)
       ->condition('form_id', $form_id)
       ->orderBy('sent', 'DESC')
@@ -486,7 +512,7 @@ function telephone_sms_verify_smscode_validate($element, &$form_state, $form) {
     if (empty($result) || $element['#value'] != $result['code']) {
       form_error($element, t('Your SMS verification code is not right'));
     }
-    elseif ($result['created'] + 60 * $expire < time()) {
+    elseif ($result['created'] + 60 * $result['expire'] < time()) {
       form_error($element, t('This SMS code has expired.'));
     }
   }
@@ -527,6 +553,8 @@ function telephone_sms_verify_element_info() {
       'form_process_container',
     ),
     '#default_value' => '',
+    '#prefix' => '<div id="telephone-sms-verify-element-wrapper">',
+    '#suffix' => '</div>',
     '#theme_wrappers' => array('container'),
     '#default_settings' => array(
       'widget' => FALSE,

@@ -1,6 +1,7 @@
 <?php
 
 function telephone_sms_verify_schema() {
+  // TODO Add expire
   $schema['telephone_sms_verify_history'] = array(
     'The sms code history for telephone_sms_verify',
     'fields' => array(
