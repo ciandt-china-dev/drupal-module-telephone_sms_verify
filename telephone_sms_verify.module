@@ -746,6 +746,7 @@ function _telephone_sms_verify_element_expand($element, &$form_state, $complete_
         array_merge($element['#array_parents'], array('value')),
       ),
       '#submit' => array(),
+      '#executes_submit_callback' => TRUE,
     );
   }
 
