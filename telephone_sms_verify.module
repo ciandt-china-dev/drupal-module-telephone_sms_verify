@@ -526,7 +526,6 @@ function telephone_sms_verify_element_info() {
       '_telephone_sms_verify_element_expand',
       'form_process_container',
     ),
-    '#description' => t('Telephone number'),
     '#default_value' => '',
     '#theme_wrappers' => array('container'),
     '#default_settings' => array(
